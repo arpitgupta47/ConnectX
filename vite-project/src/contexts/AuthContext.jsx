@@ -9,7 +9,7 @@ export const AuthContext = createContext({});
 
 // Axios instance
 const client = axios.create({
-    baseURL: `${server}/api/v1/users`,
+    baseURL: `${server}/api/v1/users`
 });
 
 // 🔥 Optional but PRO: Auto attach token
