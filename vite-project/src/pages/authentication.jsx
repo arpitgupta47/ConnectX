@@ -16,23 +16,25 @@ export default function Authentication() {
 
   const handleAuth = async (e) => {
     e.preventDefault();
+    setError('');
+    setShowMessage(false);
+
     try {
       if (formState === 0) {
         const result = await handleLogin(username, password);
         setMessage(result);
         setShowMessage(true);
-        setError('');
-        setTimeout(() => navigate('/home'), 2000);
+        setTimeout(() => navigate('/home'), 1200);
       }
+
       if (formState === 1) {
         const result = await handleRegister(name, username, password);
         setUsername('');
-        setMessage(result);
-        setShowMessage(true);
-        setError('');
-        setFormState(0);
         setPassword('');
         setName('');
+        setMessage(result);
+        setShowMessage(true);
+        setFormState(0);
       }
     } catch (err) {
       console.log(err);
@@ -71,7 +73,12 @@ export default function Authentication() {
 
         <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
           <button
-            onClick={() => setFormState(0)}
+            onClick={() => {
+              setFormState(0);
+              setError('');
+              setShowMessage(false);
+              setMessage('');
+            }}
             style={{
               padding: '10px 20px',
               marginRight: '10px',
@@ -87,7 +94,12 @@ export default function Authentication() {
             Sign In
           </button>
           <button
-            onClick={() => setFormState(1)}
+            onClick={() => {
+              setFormState(1);
+              setError('');
+              setShowMessage(false);
+              setMessage('');
+            }}
             style={{
               padding: '10px 20px',
               background: formState === 1 ? '#667eea' : '#f0f0f0',

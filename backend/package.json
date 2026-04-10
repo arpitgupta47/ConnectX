@@ -20,5 +20,9 @@
     "mongoose": "^9.4.1",
     "nodemon": "^3.1.14",
     "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "vite": "^7.3.2"
   }
 }

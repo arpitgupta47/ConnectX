@@ -4,10 +4,6 @@ import { createServer as createHttpServer } from "node:http";
 import mongoose from "mongoose";
 import cors from "cors";
 import userRoutes from "./users.routes.js";
-
-
-
-// ✅ IMPORTANT IMPORT (correct path)
 import { connectToSocket } from "../controllers/socketManager.js";
 
 dotenv.config();
@@ -15,59 +11,69 @@ dotenv.config();
 const app = express();
 const server = createHttpServer(app);
 
-// ✅ Socket connect
+// =======================
+// SOCKET
+// =======================
 connectToSocket(server);
 
-// Middlewares
-app.use(cors());
-app.use(express.json({ limit: "40kb" }));
-app.use(express.urlencoded({ limit: "40kb", extended: true}));
+// =======================
+// CORS (FIXED)
+// =======================
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5180",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "http://127.0.0.1:5180",
+    "https://syncora-95py.onrender.com"
+];
 
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true
+}));
+
+// =======================
+// MIDDLEWARES
+// =======================
+app.use(express.json({ limit: "40kb" }));
+app.use(express.urlencoded({ extended: true, limit: "40kb" }));
+
+// =======================
+// ROUTES
+// =======================
 app.use("/api/v1/users", userRoutes);
 
-// Test route
-app.get("/home", (req, res) => {
-    res.json({ hello: "World" });
+// =======================
+// TEST ROUTE
+// =======================
+app.get("/", (req, res) => {
+    res.send("API is running 🚀");
 });
 
-// Port
-const PORT = parseInt(process.env.PORT) || 8000;
+// =======================
+// PORT
+// =======================
+const PORT = process.env.PORT || 8000;
 
-// Start server with automatic port conflict resolution
+// =======================
+// DATABASE + SERVER START
+// =======================
 const start = async () => {
     try {
-        console.log("Attempting to connect to MongoDB...");
+        console.log("Connecting to MongoDB...");
 
-        const connectionDb = await mongoose.connect(process.env.MONGODB_URI);
+        const db = await mongoose.connect(process.env.MONGODB_URI);
 
-        console.log(`✅ MongoDB Connected: ${connectionDb.connection.host}`);
+        console.log(`✅ MongoDB Connected: ${db.connection.host}`);
 
-        // Function to find available port
-        const findAvailablePort = (startPort) => {
-            return new Promise((resolve, reject) => {
-                const tempServer = createHttpServer();
-                tempServer.listen(startPort, () => {
-                    tempServer.close(() => resolve(startPort));
-                });
-                tempServer.on('error', () => {
-                    // Port is in use, try next port
-                    findAvailablePort(startPort + 1).then(resolve).catch(reject);
-                });
-            });
-        };
-
-        // Try to use configured port, or find next available
-        const availablePort = await findAvailablePort(PORT);
-        if (availablePort !== PORT) {
-            console.log(`⚠️ Port ${PORT} in use, using port ${availablePort} instead`);
-        }
-
-        server.listen(availablePort, () => {
-            console.log(`🚀 LISTENING ON PORT ${availablePort}`);
+        server.listen(PORT, () => {
+            console.log(`🚀 Server running on port ${PORT}`);
         });
 
     } catch (error) {
-        console.error("❌ Error:", error.message);
+        console.error("❌ Server Error:", error.message);
         process.exit(1);
     }
 };

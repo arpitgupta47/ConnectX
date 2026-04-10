@@ -1,9 +1,5 @@
-let IS_PROD = true;
-const server = IS_PROD ?
-    
-     "https://syncora-95py.onrender.com/" :
-     
-      "http://localhost:8001"
-
+const server = import.meta.env.PROD
+  ? "https://syncora-95py.onrender.com"
+  : "http://localhost:8000";
 
 export default server;
