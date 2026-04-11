@@ -57,7 +57,29 @@ app.get("/", (req, res) => {
 // =======================
 // PORT
 // =======================
-const PORT = process.env.PORT || 8000;
+const DEFAULT_PORT = Number(process.env.PORT) || 8000;
+
+const tryListen = (port) =>
+    new Promise((resolve, reject) => {
+        const onError = (err) => {
+            cleanup();
+            reject(err);
+        };
+
+        const onListening = () => {
+            cleanup();
+            resolve();
+        };
+
+        const cleanup = () => {
+            server.off("error", onError);
+            server.off("listening", onListening);
+        };
+
+        server.once("error", onError);
+        server.once("listening", onListening);
+        server.listen(port);
+    });
 
 // =======================
 // DATABASE + SERVER START
@@ -67,13 +89,22 @@ const start = async () => {
         console.log("Connecting to MongoDB...");
 
         const db = await mongoose.connect(process.env.MONGODB_URI);
-
         console.log(`✅ MongoDB Connected: ${db.connection.host}`);
 
-        server.listen(PORT, () => {
-            console.log(`🚀 Server running on port ${PORT}`);
-        });
+        let port = DEFAULT_PORT;
+        try {
+            await tryListen(port);
+        } catch (err) {
+            if (err.code === "EADDRINUSE") {
+                console.warn(`⚠️ Port ${port} is already in use. Trying port ${port + 1}...`);
+                port += 1;
+                await tryListen(port);
+            } else {
+                throw err;
+            }
+        }
 
+        console.log(`🚀 Server running on port ${port}`);
     } catch (error) {
         console.error("❌ Server Error:", error.message);
         process.exit(1);
