@@ -32,6 +32,8 @@ export default function VideoMeetComponent() {
 
     let [videoAvailable, setVideoAvailable] = useState(true);
 
+    let [participants, setParticipants] = useState([]);
+
     let [audioAvailable, setAudioAvailable] = useState(true);
 
     let [video, setVideo] = useState(false);
@@ -65,10 +67,10 @@ export default function VideoMeetComponent() {
     // }
 
     useEffect(() => {
-        console.log("HELLO")
+        // console.log("HELLO")
         getPermissions();
 
-    })
+    },[]);
 
     let getDislayMedia = () => {
         if (screen) {
@@ -283,8 +285,17 @@ export default function VideoMeetComponent() {
         socketRef.current.on('signal', gotMessageFromServer)
 
         socketRef.current.on('connect', () => {
-            socketRef.current.emit('join-call', window.location.href)
-            socketIdRef.current = socketRef.current.id
+            
+            socketRef.current.emit('join-call', {
+    path: window.location.href,
+    name: username
+});
+            // socketRef.current.emit('join-call', window.location.href)
+            socketIdRef.current = socketRef.current.id;
+            socketRef.current.on("participants-update", (data) => {
+    console.log("Participants:", data);
+    setParticipants(data);
+});
 
             socketRef.current.on('chat-message', addMessage)
 
@@ -386,17 +397,32 @@ export default function VideoMeetComponent() {
         return Object.assign(stream.getVideoTracks()[0], { enabled: false })
     }
 
+    // let handleVideo = () => {
+    //     if (window.localStream) {
+    //         const videoTrack = window.localStream.getVideoTracks()[0];
+    //         if (videoTrack) {
+    //             videoTrack.enabled = !videoTrack.enabled;
+    //             setVideo(videoTrack.enabled);
+    //         }
+    //     } else {
+    //         setVideo(!video);
+    //     }
+    // }
     let handleVideo = () => {
-        if (window.localStream) {
-            const videoTrack = window.localStream.getVideoTracks()[0];
-            if (videoTrack) {
-                videoTrack.enabled = !videoTrack.enabled;
-                setVideo(videoTrack.enabled);
-            }
-        } else {
-            setVideo(!video);
-        }
-    }
+    if (!window.localStream) return;
+
+    const videoTrack = window.localStream.getVideoTracks()[0];
+
+    if (!videoTrack) return;
+
+    // 🔥 toggle directly
+    const newState = !videoTrack.enabled;
+    videoTrack.enabled = newState;
+
+    // 🔥 sync state
+    setVideo(newState);
+};
+
     let handleAudio = () => {
         if (window.localStream) {
             const audioTrack = window.localStream.getAudioTracks()[0];
@@ -458,10 +484,18 @@ export default function VideoMeetComponent() {
     }
 
     
+    // let connect = () => {
+    //     setAskForUsername(false);
+    //     getMedia();
+    // }
     let connect = () => {
-        setAskForUsername(false);
-        getMedia();
+    if (!username) {
+        alert("Enter username");
+        return;
     }
+    setAskForUsername(false);
+    getMedia();
+}
 
 
     return (
@@ -485,6 +519,29 @@ export default function VideoMeetComponent() {
 
 
                 <div className={styles.meetVideoContainer}>
+
+                <div style={{
+    position: "absolute",
+    right: 10,
+    top: 10,
+    background: "#1e1e1e",
+    padding: "10px",
+    borderRadius: "10px",
+    color: "white",
+    width: "200px",
+    zIndex: 1000
+}}>
+    <h3>Participants ({participants.length})</h3>
+
+    {participants.map((user, index) => (
+        <div key={index} style={{ marginBottom: "8px" }}>
+            <span>{user.name}</span>
+            <span style={{ color: "lightgreen", marginLeft: "10px" }}>
+                ● {user.status}
+            </span>
+        </div>
+    ))}
+</div>
 
                     {showModal ? <div className={styles.chatRoom}>
 
