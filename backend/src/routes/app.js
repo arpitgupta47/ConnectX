@@ -11,63 +11,53 @@ dotenv.config();
 const app = express();
 const server = createHttpServer(app);
 
-// =======================
-// SOCKET.IO
-// =======================
+// ================= SOCKET =================
 connectToSocket(server);
 
-// =======================
-// CORS (FINAL FIX)
-// =======================
+// ================= CORS FIX =================
 app.use(cors({
-  origin: (origin, callback) => {
-    // allow all (important for mobile + render)
-    return callback(null, true);
-  },
-  credentials: true,
+    origin: [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://192.168.1.8:5174",
+        "https://syncora-connect.onrender.com"  // ✅ IMPORTANT
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
 }));
 
-// =======================
-// MIDDLEWARES
-// =======================
-app.use(express.json({ limit: "40kb" }));
-app.use(express.urlencoded({ extended: true, limit: "40kb" }));
+// ✅ handle preflight
+app.options("*", cors());
 
-// =======================
-// ROUTES
-// =======================
+// ================= MIDDLEWARE =================
+app.use(express.json({ limit: "40kb" }));
+app.use(express.urlencoded({ extended: true }));
+
+// ================= ROUTES =================
 app.use("/api/v1/users", userRoutes);
 
-// =======================
-// TEST ROUTE
-// =======================
+// ================= TEST =================
 app.get("/", (req, res) => {
-  res.send("🚀 Backend Running Successfully");
+    res.send("🚀 Backend Running");
 });
 
-// =======================
-// PORT
-// =======================
-const PORT = process.env.PORT || 8000;
+// ================= START =================
+const PORT = process.env.PORT || 8002;
 
-// =======================
-// START SERVER
-// =======================
 const start = async () => {
-  try {
-    console.log("🔌 Connecting to MongoDB...");
+    try {
+        console.log("🔌 Connecting to MongoDB...");
+        const db = await mongoose.connect(process.env.MONGODB_URI);
+        console.log(`✅ MongoDB Connected: ${db.connection.host}`);
 
-    const db = await mongoose.connect(process.env.MONGODB_URI);
-    console.log(`✅ MongoDB Connected: ${db.connection.host}`);
+        server.listen(PORT, () => {
+            console.log(`🚀 Server running on port ${PORT}`);
+        });
 
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-    });
-
-  } catch (err) {
-    console.error("❌ Server Error:", err.message);
-    process.exit(1);
-  }
+    } catch (err) {
+        console.error("❌ Error:", err.message);
+        process.exit(1);
+    }
 };
 
 start();
