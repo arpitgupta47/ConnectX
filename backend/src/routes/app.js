@@ -11,34 +11,50 @@ dotenv.config();
 const app = express();
 const server = createHttpServer(app);
 
-// SOCKET
+// ================= SOCKET =================
 connectToSocket(server);
 
-// ✅ CORS (FINAL FIX)
+// ================= CORS (FIXED) =================
 app.use(cors({
-    origin: "*",
+    origin: [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://192.168.1.8:5174",
+        "https://connectx-frontend.onrender.com" // 👈 IMPORTANT (tumhara frontend URL)
+    ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 }));
 
-app.options("*", cors());
+// ✅ IMPORTANT: preflight request fix
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", req.headers.origin);
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.header("Access-Control-Allow-Credentials", "true");
 
-// MIDDLEWARE
-app.use(express.json({ limit: "40kb" }));
+    if (req.method === "OPTIONS") {
+        return res.sendStatus(200);
+    }
+
+    next();
+});
+
+// ================= MIDDLEWARE =================
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ROUTES
+// ================= ROUTES =================
 app.use("/api/v1/users", userRoutes);
 
-// TEST
+// ================= TEST =================
 app.get("/", (req, res) => {
     res.send("🚀 Backend Running");
 });
 
-// PORT
+// ================= START =================
 const PORT = process.env.PORT || 8002;
 
-// START
 const start = async () => {
     try {
         console.log("🔌 Connecting to MongoDB...");
