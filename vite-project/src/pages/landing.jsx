@@ -10,7 +10,7 @@ export default function LandingPage() {
         <div className='landingPageContainer'>
             <nav>
                 <div className='navHeader'>
-                    <h2>SYNCORA</h2>
+                    <h2>ConnectX</h2>
                 </div>
 
                 <div className='navlist'>
@@ -30,7 +30,7 @@ export default function LandingPage() {
                         <span style={{ color: "#FF9839" }}>Connect</span> with your loved Ones
                     </h1>
 
-                    <p>Cover a distance with SYNCORA</p>
+                    <p>Cover a distance with ConnectX</p>
 
                     <div role='button'>
                         <Link to={"/auth"}>Get Started</Link>
