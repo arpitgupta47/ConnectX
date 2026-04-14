@@ -11,74 +11,48 @@ dotenv.config();
 const app = express();
 const server = createHttpServer(app);
 
-// ================= SOCKET =================
+// SOCKET
 connectToSocket(server);
 
-// ================= CORS (FINAL FIX) =================
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://192.168.1.8:5174",
-  "https://syncora-connect.onrender.com"
-];
-
+// ✅ CORS (FINAL FIX)
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // allow Postman / mobile apps
-
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("CORS not allowed"));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
 }));
 
-// ✅ IMPORTANT: handle preflight requests
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", req.headers.origin);
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Credentials", "true");
+app.options("*", cors());
 
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-
-  next();
-});
-
-// ================= MIDDLEWARE =================
+// MIDDLEWARE
 app.use(express.json({ limit: "40kb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// ================= ROUTES =================
+// ROUTES
 app.use("/api/v1/users", userRoutes);
 
-// ================= TEST =================
+// TEST
 app.get("/", (req, res) => {
-  res.send("🚀 Backend Running");
+    res.send("🚀 Backend Running");
 });
 
-// ================= START =================
+// PORT
 const PORT = process.env.PORT || 8002;
 
+// START
 const start = async () => {
-  try {
-    console.log("🔌 Connecting to MongoDB...");
-    const db = await mongoose.connect(process.env.MONGODB_URI);
-    console.log(`✅ MongoDB Connected: ${db.connection.host}`);
+    try {
+        console.log("🔌 Connecting to MongoDB...");
+        const db = await mongoose.connect(process.env.MONGODB_URI);
+        console.log(`✅ MongoDB Connected: ${db.connection.host}`);
 
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-    });
+        server.listen(PORT, () => {
+            console.log(`🚀 Server running on port ${PORT}`);
+        });
 
-  } catch (err) {
-    console.error("❌ Error:", err.message);
-    process.exit(1);
-  }
+    } catch (err) {
+        console.error("❌ Error:", err.message);
+        process.exit(1);
+    }
 };
 
 start();
