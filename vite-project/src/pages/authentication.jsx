@@ -20,27 +20,34 @@ export default function Authentication() {
     setShowMessage(false);
 
     try {
+      // 🔥 LOGIN
       if (formState === 0) {
-        const result = await handleLogin(username, password);
-        setMessage(result);
-        setShowMessage(true);
-        setTimeout(() => navigate('/home'), 1200);
+        await handleLogin(username, password);
+
+        // ✅ direct redirect
+        navigate('/home');
       }
 
+      // 🔥 REGISTER
       if (formState === 1) {
         const result = await handleRegister(name, username, password);
+
         setUsername('');
         setPassword('');
         setName('');
-        setMessage(result);
+        setMessage(result || "Registered successfully");
         setShowMessage(true);
+
+        // switch to login
         setFormState(0);
       }
+
     } catch (err) {
-      console.log(err);
-      const errorMessage = err.response?.data?.message || 'An error occurred';
+      const errorMessage =
+        err.response?.data?.message || err.message || 'An error occurred';
+
       setError(errorMessage);
-      setShowMessage(false);
+      console.log("AUTH ERROR:", err);
     }
   };
 
@@ -62,21 +69,25 @@ export default function Authentication() {
         width: '100%',
         maxWidth: '400px'
       }}>
+
+        {/* HEADER */}
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <h2 style={{ color: '#333', marginBottom: '10px', fontSize: '28px' }}>
+          <h2 style={{ color: '#333', marginBottom: '10px' }}>
             {formState === 0 ? 'Sign In' : 'Sign Up'}
           </h2>
-          <p style={{ color: '#666', fontSize: '16px' }}>
-            {formState === 0 ? 'Welcome back to Syncora!' : 'Create your account'}
+          <p style={{ color: '#666' }}>
+            {formState === 0
+              ? 'Welcome back to Syncora!'
+              : 'Create your account'}
           </p>
         </div>
 
+        {/* TOGGLE BUTTONS */}
         <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
           <button
             onClick={() => {
               setFormState(0);
               setError('');
-              setShowMessage(false);
               setMessage('');
             }}
             style={{
@@ -87,17 +98,16 @@ export default function Authentication() {
               border: 'none',
               borderRadius: '5px',
               cursor: 'pointer',
-              fontSize: '16px',
               fontWeight: 'bold'
             }}
           >
             Sign In
           </button>
+
           <button
             onClick={() => {
               setFormState(1);
               setError('');
-              setShowMessage(false);
               setMessage('');
             }}
             style={{
@@ -107,7 +117,6 @@ export default function Authentication() {
               border: 'none',
               borderRadius: '5px',
               cursor: 'pointer',
-              fontSize: '16px',
               fontWeight: 'bold'
             }}
           >
@@ -115,132 +124,89 @@ export default function Authentication() {
           </button>
         </div>
 
+        {/* FORM */}
         <form onSubmit={handleAuth}>
           {formState === 1 && (
-            <div style={{ marginBottom: '15px' }}>
-              <input
-                type="text"
-                placeholder="Full Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '1px solid #ddd',
-                  borderRadius: '5px',
-                  fontSize: '16px',
-                  boxSizing: 'border-box',
-                  outline: 'none'
-                }}
-                required
-              />
-            </div>
-          )}
-
-          <div style={{ marginBottom: '15px' }}>
             <input
               type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '1px solid #ddd',
-                borderRadius: '5px',
-                fontSize: '16px',
-                boxSizing: 'border-box',
-                outline: 'none'
-              }}
+              placeholder="Full Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={inputStyle}
               required
             />
-          </div>
-
-          <div style={{ marginBottom: '15px' }}>
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '1px solid #ddd',
-                borderRadius: '5px',
-                fontSize: '16px',
-                boxSizing: 'border-box',
-                outline: 'none'
-              }}
-              required
-            />
-          </div>
-
-          {error && (
-            <div style={{
-              color: 'red',
-              marginBottom: '15px',
-              padding: '10px',
-              background: '#ffe6e6',
-              borderRadius: '5px',
-              textAlign: 'center',
-              fontSize: '14px'
-            }}>
-              {error}
-            </div>
           )}
 
-          <button
-            type="submit"
-            style={{
-              width: '100%',
-              padding: '12px',
-              background: '#667eea',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              fontSize: '16px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              transition: 'background 0.3s'
-            }}
-            onMouseOver={(e) => e.target.style.background = '#5a6fd8'}
-            onMouseOut={(e) => e.target.style.background = '#667eea'}
-          >
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            style={inputStyle}
+            required
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={inputStyle}
+            required
+          />
+
+          {error && <div style={errorStyle}>{error}</div>}
+
+          <button type="submit" style={btnStyle}>
             {formState === 0 ? 'Sign In' : 'Sign Up'}
           </button>
         </form>
 
+        {/* SUCCESS MESSAGE */}
         {showMessage && (
-          <div style={{
-            position: 'fixed',
-            top: '20px',
-            right: '20px',
-            background: '#4caf50',
-            color: 'white',
-            padding: '15px 20px',
-            borderRadius: '5px',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-            zIndex: 1000,
-            fontSize: '14px'
-          }}>
+          <div style={successStyle}>
             {message}
-            <button
-              onClick={() => setShowMessage(false)}
-              style={{
-                marginLeft: '10px',
-                background: 'transparent',
-                border: 'none',
-                color: 'white',
-                cursor: 'pointer',
-                fontSize: '18px',
-                fontWeight: 'bold'
-              }}
-            >
-              ×
-            </button>
           </div>
         )}
+
       </div>
     </div>
   );
 }
+
+// 🔥 styles
+const inputStyle = {
+  width: '100%',
+  padding: '12px',
+  marginBottom: '15px',
+  border: '1px solid #ddd',
+  borderRadius: '5px',
+  fontSize: '16px'
+};
+
+const btnStyle = {
+  width: '100%',
+  padding: '12px',
+  background: '#667eea',
+  color: 'white',
+  border: 'none',
+  borderRadius: '5px',
+  fontSize: '16px',
+  cursor: 'pointer',
+  fontWeight: 'bold'
+};
+
+const errorStyle = {
+  color: 'red',
+  marginBottom: '10px',
+  textAlign: 'center'
+};
+
+const successStyle = {
+  marginTop: '15px',
+  padding: '10px',
+  background: '#4caf50',
+  color: 'white',
+  borderRadius: '5px',
+  textAlign: 'center'
+};
