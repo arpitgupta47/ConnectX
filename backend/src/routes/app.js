@@ -11,50 +11,63 @@ dotenv.config();
 const app = express();
 const server = createHttpServer(app);
 
-// SOCKET
+// =======================
+// SOCKET.IO
+// =======================
 connectToSocket(server);
 
-// CORS
-// app.use(cors({
-//     origin: true,
-//     credentials: true
-// }));
+// =======================
+// CORS (FINAL FIX)
+// =======================
 app.use(cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"]
+  origin: (origin, callback) => {
+    // allow all (important for mobile + render)
+    return callback(null, true);
+  },
+  credentials: true,
 }));
 
+// =======================
 // MIDDLEWARES
+// =======================
 app.use(express.json({ limit: "40kb" }));
 app.use(express.urlencoded({ extended: true, limit: "40kb" }));
 
+// =======================
 // ROUTES
+// =======================
 app.use("/api/v1/users", userRoutes);
 
-// TEST
+// =======================
+// TEST ROUTE
+// =======================
 app.get("/", (req, res) => {
-    res.send("🚀 Backend Running");
+  res.send("🚀 Backend Running Successfully");
 });
 
+// =======================
 // PORT
+// =======================
 const PORT = process.env.PORT || 8000;
 
-// START
+// =======================
+// START SERVER
+// =======================
 const start = async () => {
-    try {
-        console.log("Connecting to MongoDB...");
-        const db = await mongoose.connect(process.env.MONGODB_URI);
-        console.log(`✅ MongoDB Connected: ${db.connection.host}`);
+  try {
+    console.log("🔌 Connecting to MongoDB...");
 
-        server.listen(PORT, () => {
-            console.log(`🚀 Server running on port ${PORT}`);
-        });
+    const db = await mongoose.connect(process.env.MONGODB_URI);
+    console.log(`✅ MongoDB Connected: ${db.connection.host}`);
 
-    } catch (err) {
-        console.error("❌ Error:", err.message);
-        process.exit(1);
-    }
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+
+  } catch (err) {
+    console.error("❌ Server Error:", err.message);
+    process.exit(1);
+  }
 };
 
 start();
