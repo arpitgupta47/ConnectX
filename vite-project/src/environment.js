@@ -1,7 +1,5 @@
-const isLocal = window.location.hostname === "192.168.1.8";
-
-const server = isLocal
-  ? "http://192.168.1.8:8002"
-  : "https://syncora-95py.onrender.com";
+const server = import.meta.env.PROD
+  ? "https://syncora-95py.onrender.com"
+  : "http://localhost:8002";
 
 export default server;
