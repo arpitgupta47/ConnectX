@@ -26,7 +26,7 @@ function HomeComponent() {
 
                 <div style={{ display: "flex", alignItems: "center" }}>
 
-                    <h2>SYNCORA</h2>
+                    <h2>ConnectX</h2>
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center" }}>
