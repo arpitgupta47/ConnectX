@@ -7,7 +7,7 @@ import server from "../environment";
 export const AuthContext = createContext({});
 
 const client = axios.create({
-  baseURL: `${server}/api/v1/users`.replace(/\/$/, ""),
+  baseURL: `${server}/api/v1/users`,
   timeout: 10000,
   withCredentials: true   // ✅ ADD THIS LINE
 });
