@@ -382,15 +382,31 @@ export default function VideoMeetComponent() {
         return Object.assign(stream.getVideoTracks()[0], { enabled: false })
     }
 
-    let handleVideo = () => {
-        setVideo(!video);
-        // getUserMedia();
-    }
-    let handleAudio = () => {
-        setAudio(!audio)
-        // getUserMedia();
-    }
+   let handleVideo = () => {
+    if (!window.localStream) return;
 
+    const videoTrack = window.localStream.getVideoTracks()[0];
+
+    if (!videoTrack) return;
+
+    // toggle camera
+    videoTrack.enabled = !videoTrack.enabled;
+
+    // sync UI state
+    setVideo(videoTrack.enabled);
+}
+    }
+  let handleAudio = () => {
+    if (!window.localStream) return;
+
+    const audioTrack = window.localStream.getAudioTracks()[0];
+
+    if (!audioTrack) return;
+
+    audioTrack.enabled = !audioTrack.enabled;
+
+    setAudio(audioTrack.enabled);
+}
     useEffect(() => {
         if (screen !== undefined) {
             getDislayMedia();
