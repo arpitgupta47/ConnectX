@@ -34,7 +34,7 @@ export default function VideoMeetComponent() {
 
     let [audioAvailable, setAudioAvailable] = useState(true);
 
-    let [video, setVideo] = useState([]);
+    let [video, setVideo] = useState(false);
 
     let [audio, setAudio] = useState();
 
@@ -67,8 +67,7 @@ export default function VideoMeetComponent() {
     useEffect(() => {
         console.log("HELLO")
         getPermissions();
-
-    })
+}, []);
 
     let getDislayMedia = () => {
         if (screen) {
@@ -394,8 +393,8 @@ export default function VideoMeetComponent() {
 
     // sync UI state
     setVideo(videoTrack.enabled);
-}
-    }
+};
+    
   let handleAudio = () => {
     if (!window.localStream) return;
 
@@ -406,7 +405,7 @@ export default function VideoMeetComponent() {
     audioTrack.enabled = !audioTrack.enabled;
 
     setAudio(audioTrack.enabled);
-}
+};
     useEffect(() => {
         if (screen !== undefined) {
             getDislayMedia();
