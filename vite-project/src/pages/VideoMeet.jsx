@@ -35,6 +35,7 @@ export default function VideoMeetComponent() {
 
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
+  const [typingUser, setTypingUser] = useState("");
 
   const [showModal, setModal] = useState(true);
   const [newMessages, setNewMessages] = useState(0);
@@ -42,10 +43,9 @@ export default function VideoMeetComponent() {
   const [username, setUsername] = useState("");
   const [askForUsername, setAskForUsername] = useState(true);
 
-  const videoRef = useRef([]);
   const [videos, setVideos] = useState([]);
 
-  // ✅ GET MEDIA
+  // ================= MEDIA =================
   const getMedia = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: true,
@@ -58,11 +58,12 @@ export default function VideoMeetComponent() {
     connectToSocketServer();
   };
 
-  // ✅ SOCKET CONNECT
+  // ================= SOCKET =================
   const connectToSocketServer = () => {
     socketRef.current = io.connect(server_url);
 
     socketRef.current.on('connect', () => {
+
       socketIdRef.current = socketRef.current.id;
 
       socketRef.current.emit('join-call', {
@@ -71,7 +72,13 @@ export default function VideoMeetComponent() {
       });
 
       socketRef.current.on("participants-update", setParticipants);
+
       socketRef.current.on('chat-message', addMessage);
+
+      socketRef.current.on("typing", (name) => {
+        setTypingUser(name);
+        setTimeout(() => setTypingUser(""), 2000);
+      });
 
       socketRef.current.on('user-joined', (id, clients) => {
 
@@ -127,7 +134,7 @@ export default function VideoMeetComponent() {
     }
   };
 
-  // ✅ BUTTON HANDLERS
+  // ================= CONTROLS =================
   const handleVideo = () => {
     const track = window.localStream.getVideoTracks()[0];
     track.enabled = !track.enabled;
@@ -155,13 +162,24 @@ export default function VideoMeetComponent() {
     window.location.href = "/";
   };
 
+  // ================= CHAT =================
+  const addMessage = (data, sender) => {
+    setMessages(prev => [...prev, { sender, data }]);
+
+    if (sender !== username) {
+      setNewMessages(prev => prev + 1);
+    }
+  };
+
   const sendMessage = () => {
+    if (!message.trim()) return;
     socketRef.current.emit('chat-message', message, username);
     setMessage("");
   };
 
-  const addMessage = (data, sender) => {
-    setMessages(prev => [...prev, { sender, data }]);
+  const handleTyping = (e) => {
+    setMessage(e.target.value);
+    socketRef.current.emit("typing", username);
   };
 
   const connect = () => {
@@ -171,7 +189,6 @@ export default function VideoMeetComponent() {
   };
 
   // ================= UI =================
-
   if (askForUsername) {
     return (
       <div style={{ textAlign: "center", marginTop: "100px" }}>
@@ -197,7 +214,10 @@ export default function VideoMeetComponent() {
       }}>
         <h3>Participants ({participants.length})</h3>
         {participants.map((user, i) => (
-          <div key={i}>{user.name}</div>
+          <div key={i}>
+            {user.name}
+            <span style={{ color: "lightgreen", marginLeft: "8px" }}>● online</span>
+          </div>
         ))}
       </div>
 
@@ -207,22 +227,41 @@ export default function VideoMeetComponent() {
           position: "absolute",
           right: 10,
           bottom: 10,
-          width: "300px",
-          height: "400px",
-          background: "#1e1e1e",
-          borderRadius: "10px",
+          width: "320px",
+          height: "420px",
+          background: "white",
+          borderRadius: "12px",
           display: "flex",
           flexDirection: "column",
           padding: "10px"
         }}>
-          <div style={{ flex: 1, overflow: "auto", color: "white" }}>
-            {messages.map((m, i) => (
-              <div key={i}><b>{m.sender}</b>: {m.data}</div>
-            ))}
+
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            {messages.map((m, i) => {
+              const isMe = m.sender === username;
+              return (
+                <div key={i} style={{
+                  display: "flex",
+                  justifyContent: isMe ? "flex-end" : "flex-start",
+                  marginBottom: "10px"
+                }}>
+                  <div style={{
+                    background: isMe ? "#667eea" : "#eee",
+                    color: isMe ? "white" : "black",
+                    padding: "8px",
+                    borderRadius: "10px"
+                  }}>
+                    {m.data}
+                  </div>
+                </div>
+              );
+            })}
+
+            {typingUser && <p>✍️ {typingUser} typing...</p>}
           </div>
 
-          <div style={{ display: "flex" }}>
-            <TextField value={message} onChange={(e) => setMessage(e.target.value)} fullWidth size="small" />
+          <div style={{ display: "flex", gap: "5px" }}>
+            <TextField value={message} onChange={handleTyping} fullWidth size="small" />
             <Button onClick={sendMessage}>Send</Button>
           </div>
         </div>
@@ -237,7 +276,6 @@ export default function VideoMeetComponent() {
         display: "flex",
         gap: "10px"
       }}>
-
         <IconButton style={{ color: "white", background: "#333" }} onClick={handleVideo}>
           {video ? <VideocamIcon /> : <VideocamOffIcon />}
         </IconButton>
@@ -250,21 +288,21 @@ export default function VideoMeetComponent() {
           {screen ? <StopScreenShareIcon /> : <ScreenShareIcon />}
         </IconButton>
 
-        <IconButton style={{ color: "white", background: "#333" }} onClick={() => setModal(!showModal)}>
-          <ChatIcon />
-        </IconButton>
+        <Badge badgeContent={newMessages} color="error">
+          <IconButton onClick={() => { setModal(!showModal); setNewMessages(0); }} style={{ color: "white", background: "#333" }}>
+            <ChatIcon />
+          </IconButton>
+        </Badge>
 
-        {/* 🔴 RED CALL END */}
         <IconButton style={{ color: "white", background: "red" }} onClick={handleEndCall}>
           <CallEndIcon />
         </IconButton>
-
       </div>
 
       {/* LOCAL VIDEO */}
       <video ref={localVideoref} autoPlay muted className={styles.meetUserVideo}></video>
 
-      {/* REMOTE VIDEOS */}
+      {/* REMOTE */}
       <div className={styles.conferenceView}>
         {videos.map(v => (
           <video key={v.socketId} ref={ref => ref && (ref.srcObject = v.stream)} autoPlay />
