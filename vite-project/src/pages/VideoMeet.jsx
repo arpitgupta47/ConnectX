@@ -34,9 +34,9 @@ export default function VideoMeetComponent() {
 
     let [audioAvailable, setAudioAvailable] = useState(true);
 
-    let [video, setVideo] = useState(false);
+    let [video, setVideo] = useState(true);
 
-    let [audio, setAudio] = useState();
+    let [audio, setAudio] = useState(true);
 
     let [screen, setScreen] = useState();
 
@@ -120,15 +120,15 @@ export default function VideoMeetComponent() {
         }
     };
 
-    useEffect(() => {
-        if (video !== undefined && audio !== undefined) {
-            getUserMedia();
-            console.log("SET STATE HAS ", video, audio);
+    // useEffect(() => {
+    //     if (video !== undefined && audio !== undefined) {
+    //         getUserMedia();
+    //         console.log("SET STATE HAS ", video, audio);
 
-        }
+    //     }
 
 
-    }, [video, audio])
+    // }, [video, audio])
     let getMedia = () => {
         setVideo(videoAvailable);
         setAudio(audioAvailable);
