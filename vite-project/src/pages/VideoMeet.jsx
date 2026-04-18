@@ -110,9 +110,10 @@ export default function VideoMeetComponent() {
                 const userMediaStream = await navigator.mediaDevices.getUserMedia({ video: videoAvailable, audio: audioAvailable });
                 if (userMediaStream) {
                     window.localStream = userMediaStream;
-                    if (localVideoref.current) {
-                        localVideoref.current.srcObject = userMediaStream;
-                    }
+                 if (localVideoref.current) {
+    localVideoref.current.srcObject = stream;
+    localVideoref.current.play().catch(()=>{});
+}
                 }
             }
         } catch (error) {
@@ -548,22 +549,28 @@ const handleAudio = async () => {
                     </div>
 
 
-                    <video className={styles.meetUserVideo} ref={localVideoref} autoPlay muted></video>
+                   <video 
+  className={styles.meetUserVideo} 
+  ref={localVideoref} 
+  autoPlay 
+  muted 
+  playsInline
+></video>
 
                     <div className={styles.conferenceView}>
                         {videos.map((video) => (
                             <div key={video.socketId}>
-                                <video
-
-                                    data-socket={video.socketId}
-                                    ref={ref => {
-                                        if (ref && video.stream) {
-                                            ref.srcObject = video.stream;
-                                        }
-                                    }}
-                                    autoPlay
-                                >
-                                </video>
+                             <video
+  data-socket={video.socketId}
+  ref={ref => {
+      if (ref && video.stream) {
+          ref.srcObject = video.stream;
+      }
+  }}
+  autoPlay
+  playsInline
+>
+</video>
                             </div>
 
                         ))}
