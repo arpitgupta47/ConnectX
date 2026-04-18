@@ -108,13 +108,14 @@ export default function VideoMeetComponent() {
 
             if (videoAvailable || audioAvailable) {
                 const userMediaStream = await navigator.mediaDevices.getUserMedia({ video: videoAvailable, audio: audioAvailable });
-                if (userMediaStream) {
-                    window.localStream = userMediaStream;
-                 if (localVideoref.current) {
-   localVideoref.current.srcObject = userMediaStream;
-    localVideoref.current.play().catch(()=>{});
+               if (userMediaStream) {
+    window.localStream = userMediaStream;
+
+    if (localVideoref.current) {
+        localVideoref.current.srcObject = userMediaStream;  // ✅ FIX
+        localVideoref.current.play().catch(()=>{});
+    }
 }
-                }
             }
         } catch (error) {
             console.log(error);
