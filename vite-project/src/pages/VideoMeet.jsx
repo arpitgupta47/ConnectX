@@ -111,7 +111,7 @@ export default function VideoMeetComponent() {
                 if (userMediaStream) {
                     window.localStream = userMediaStream;
                  if (localVideoref.current) {
-    localVideoref.current.srcObject = stream;
+   localVideoref.current.srcObject = userMediaStream;
     localVideoref.current.play().catch(()=>{});
 }
                 }
@@ -133,12 +133,17 @@ export default function VideoMeetComponent() {
 
 
     let getUserMediaSuccess = (stream) => {
-        // try {
-          
-        // } catch (e) { console.log(e) }
+      
+    window.localStream = stream;
 
-        window.localStream = stream
-        localVideoref.current.srcObject = stream
+if (localVideoref.current) {
+    localVideoref.current.srcObject = stream;
+
+    // 🔥 important for mobile + laptop
+    localVideoref.current.onloadedmetadata = () => {
+        localVideoref.current.play().catch(() => {});
+    };
+}
 
         for (let id in connections) {
             if (id === socketIdRef.current) continue
@@ -231,9 +236,7 @@ export default function VideoMeetComponent() {
                 tracks.forEach(track => track.stop())
             } catch (e) { console.log(e) }
 
-            let blackSilence = (...args) => new MediaStream([black(...args), silence()])
-            window.localStream = blackSilence()
-            localVideoref.current.srcObject = window.localStream
+          
 
             getUserMedia()
 
@@ -486,7 +489,7 @@ const handleAudio = async () => {
 
 
                     <div>
-                        <video ref={localVideoref} autoPlay muted></video>
+                        <video ref={localVideoref} autoPlay muted playsInline></video>
                     </div>
 
                 </div> :
