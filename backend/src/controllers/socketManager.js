@@ -85,6 +85,16 @@ export const connectToSocket = (server) => {
             });
         });
 
+        // ── REACTION ──────────────────────────────────────────────
+        socket.on("reaction", ({ emoji, name }) => {
+            const user = users[socket.id];
+            if (!user) return;
+            const room = user.room;
+            connections[room]?.forEach((id) => {
+                if (id !== socket.id) io.to(id).emit("reaction", { emoji, name });
+            });
+        });
+
         // ── DISCONNECT ─────────────────────────────────────────────
         socket.on("disconnect", () => {
             const user = users[socket.id];
