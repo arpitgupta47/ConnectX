@@ -120,15 +120,7 @@ export default function VideoMeetComponent() {
         }
     };
 
-    // useEffect(() => {
-    //     if (video !== undefined && audio !== undefined) {
-    //         getUserMedia();
-    //         console.log("SET STATE HAS ", video, audio);
-
-    //     }
-
-
-    // }, [video, audio])
+    
     let getMedia = () => {
         setVideo(videoAvailable);
         setAudio(audioAvailable);
@@ -140,9 +132,9 @@ export default function VideoMeetComponent() {
 
 
     let getUserMediaSuccess = (stream) => {
-        try {
-            window.localStream.getTracks().forEach(track => track.stop())
-        } catch (e) { console.log(e) }
+        // try {
+          
+        // } catch (e) { console.log(e) }
 
         window.localStream = stream
         localVideoref.current.srcObject = stream
@@ -395,16 +387,34 @@ export default function VideoMeetComponent() {
     setVideo(videoTrack.enabled);
 };
     
-  let handleAudio = () => {
+const handleAudio = async () => {
     if (!window.localStream) return;
 
-    const audioTrack = window.localStream.getAudioTracks()[0];
+    let audioTrack = window.localStream.getAudioTracks()[0];
 
-    if (!audioTrack) return;
+    // ✅ Case 1: already track hai → toggle
+    if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setAudio(audioTrack.enabled);
+    } 
+    
+    // 🔥 Case 2: track missing → mic dobara add karo
+    else {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const newTrack = stream.getAudioTracks()[0];
 
-    audioTrack.enabled = !audioTrack.enabled;
+            window.localStream.addTrack(newTrack);
 
-    setAudio(audioTrack.enabled);
+            for (let id in connections) {
+                connections[id].addTrack(newTrack, window.localStream);
+            }
+
+            setAudio(true);
+        } catch (err) {
+            console.log("Mic error:", err);
+        }
+    }
 };
     useEffect(() => {
         if (screen !== undefined) {
