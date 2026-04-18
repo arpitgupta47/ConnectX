@@ -14,31 +14,31 @@ const server = createHttpServer(app);
 // ================= SOCKET =================
 connectToSocket(server);
 
-// ================= CORS (FIXED) =================
+// ================= CORS (FIXED - no double headers conflict) =================
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://192.168.1.8:5174",
+    "https://connectx-frontend.onrender.com"
+];
+
 app.use(cors({
-    origin: [
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://192.168.1.8:5174",
-        "https://connectx-frontend.onrender.com" // 👈 IMPORTANT (tumhara frontend URL)
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true
+    origin: function (origin, callback) {
+        // Allow requests with no origin (Postman, curl, mobile)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            return callback(null, true);
+        }
+        return callback(new Error("Not allowed by CORS"));
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+    optionsSuccessStatus: 200
 }));
 
-// ✅ IMPORTANT: preflight request fix
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", req.headers.origin);
-    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.header("Access-Control-Allow-Credentials", "true");
-
-    if (req.method === "OPTIONS") {
-        return res.sendStatus(200);
-    }
-
-    next();
-});
+// Handle preflight for all routes
+app.options("*", cors());
 
 // ================= MIDDLEWARE =================
 app.use(express.json());
