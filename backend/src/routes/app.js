@@ -14,7 +14,7 @@ const server = createHttpServer(app);
 // ================= SOCKET =================
 connectToSocket(server);
 
-// ================= CORS (FIXED - no double headers conflict) =================
+// ================= CORS =================
 const allowedOrigins = [
     "http://localhost:5173",
     "http://localhost:5174",
@@ -22,23 +22,35 @@ const allowedOrigins = [
     "https://connectx-frontend.onrender.com"
 ];
 
-app.use(cors({
+const corsOptions = {
     origin: function (origin, callback) {
-        // Allow requests with no origin (Postman, curl, mobile)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1) {
-            return callback(null, true);
-        }
+        if (allowedOrigins.includes(origin)) return callback(null, true);
         return callback(new Error("Not allowed by CORS"));
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
     optionsSuccessStatus: 200
-}));
+};
 
-// Handle preflight for all routes
-app.options("*", cors());
+app.use(cors(corsOptions));
+
+// FIX: Express v5 does not support wildcard "*" in app.options()
+// Use app.use middleware for preflight instead
+app.use((req, res, next) => {
+    if (req.method === "OPTIONS") {
+        const origin = req.headers.origin;
+        if (!origin || allowedOrigins.includes(origin)) {
+            res.setHeader("Access-Control-Allow-Origin", origin || "*");
+            res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+            res.setHeader("Access-Control-Allow-Credentials", "true");
+            return res.sendStatus(200);
+        }
+    }
+    next();
+});
 
 // ================= MIDDLEWARE =================
 app.use(express.json());
