@@ -8,8 +8,8 @@ export const AuthContext = createContext({});
 
 const client = axios.create({
   baseURL: `${server}/api/v1/users`,
-  timeout: 10000,
-  withCredentials: true   // ✅ ADD THIS LINE
+  timeout: 30000,  // 30s - render.com free tier cold start leta hai ~15-20s
+  withCredentials: true
 });
 
 // Request Interceptor
