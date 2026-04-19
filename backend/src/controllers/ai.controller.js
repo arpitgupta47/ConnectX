@@ -1,4 +1,4 @@
-import fetch from "node-fetch";
+// Node.js 22 mein fetch built-in hai — node-fetch ki zarurat nahi
 
 export const aiChat = async (req, res) => {
     const { messages, systemPrompt } = req.body;
@@ -9,7 +9,7 @@ export const aiChat = async (req, res) => {
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-        return res.status(500).json({ message: "AI not configured on server. Add ANTHROPIC_API_KEY to backend .env" });
+        return res.status(500).json({ message: "AI not configured. Add ANTHROPIC_API_KEY to backend .env on Render." });
     }
 
     try {
@@ -43,4 +43,3 @@ export const aiChat = async (req, res) => {
         return res.status(500).json({ message: "AI service unavailable: " + e.message });
     }
 };
-
