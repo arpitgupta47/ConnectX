@@ -12,33 +12,61 @@
 .conferenceView {
     flex: 1;
     display: grid;
-    gap: 8px;
-    padding: 12px 12px 76px 12px;
+    gap: 10px;
+    padding: 16px 16px 76px 16px;
     overflow: hidden;
-    width: 100%;
-    height: 100%;
     box-sizing: border-box;
+    align-items: center;
+    justify-items: center;
     align-content: center;
     justify-content: center;
 }
 
-.count1  { grid-template-columns: 1fr; }
-.count2  { grid-template-columns: 1fr 1fr; }
-.count3  { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
-.count5  { grid-template-columns: 1fr 1fr 1fr; }
-.countMany { grid-template-columns: 1fr 1fr 1fr; }
+/* 1 participant — centered, reasonable size (not full screen) */
+.count1 {
+    grid-template-columns: minmax(0, 640px);
+    grid-template-rows: minmax(0, 480px);
+}
+
+/* 2 participants — side by side */
+.count2 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: minmax(0, 1fr);
+}
+
+/* 3–4 participants — 2x2 */
+.count3 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+/* 5–6 participants */
+.count5 {
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+/* 7+ participants */
+.countMany {
+    grid-template-columns: 1fr 1fr 1fr;
+}
 
 /* ── VIDEO TILE ─────────────────────────────────────────────────── */
 .videoTile {
     position: relative;
     background: #111122;
-    border-radius: 14px;
+    border-radius: 16px;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 0;
     min-width: 0;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 16/9;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.06);
 }
 
 .videoTile video {
@@ -46,16 +74,17 @@
     height: 100%;
     object-fit: cover;
     display: block;
-    border-radius: 14px;
+    border-radius: 16px;
 }
 
+/* ── NAME TAG ───────────────────────────────────────────────────── */
 .nameTag {
     position: absolute;
     bottom: 10px;
     left: 10px;
     background: rgba(0,0,0,0.65);
     color: white;
-    padding: 4px 10px;
+    padding: 4px 12px;
     border-radius: 20px;
     font-size: 12px;
     font-weight: 600;
@@ -71,7 +100,7 @@
     position: absolute;
     top: 10px;
     right: 10px;
-    background: rgba(102,126,234,0.75);
+    background: rgba(102,126,234,0.8);
     color: white;
     padding: 3px 10px;
     border-radius: 12px;
@@ -90,9 +119,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 0 16px;
-    background: linear-gradient(transparent, rgba(0,0,0,0.9));
+    gap: 8px;
+    padding: 0 20px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.92));
     z-index: 10;
     flex-wrap: nowrap;
 }
@@ -142,6 +171,10 @@
 
 /* ── MOBILE ─────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+    .count1 {
+        grid-template-columns: minmax(0, 100%);
+        grid-template-rows: minmax(0, 260px);
+    }
     .count2, .count3 { grid-template-columns: 1fr; }
     .count5, .countMany { grid-template-columns: 1fr 1fr; }
     .chatRoom { width: 100%; border-left: none; border-top: 1px solid rgba(102,126,234,0.2); }
