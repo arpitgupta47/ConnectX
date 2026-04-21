@@ -517,7 +517,7 @@ Give a JSON response ONLY (no markdown) with this exact structure:
 }`;
 
         try {
-            const res = await fetch(\`\${server_url}/api/v1/users/ai/chat\`, {
+            const res = await fetch(`${server_url}/api/v1/users/ai/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
