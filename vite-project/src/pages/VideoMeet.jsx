@@ -235,6 +235,17 @@ export default function VideoMeetComponent() {
     const socketIdRef = useRef();
     const localVideoref = useRef();
 
+    // ── Callback ref: jab bhi local video DOM node mount ho,
+    //    turant stream assign karo — koi setTimeout nahi chahiye.
+    //    Yeh mobile browsers pe bhi reliably kaam karta hai.
+    const localVideoCallbackRef = useCallback((node) => {
+        localVideoref.current = node;
+        if (node && window.localStream) {
+            node.srcObject = window.localStream;
+            node.play().catch(() => { });
+        }
+    }, []);
+
     const [videoAvailable, setVideoAvailable] = useState(true);
     const [audioAvailable, setAudioAvailable] = useState(true);
     const [video, setVideo] = useState(false);
@@ -269,21 +280,6 @@ export default function VideoMeetComponent() {
 
     // ── Screen share trigger ──────────────────────────────────────
     useEffect(() => { if (screen) getDisplayMedia(); }, [screen]);
-
-    // ── FIX: Jab lobby screen se meeting screen pe jaate hain,
-    //    localVideoref naya DOM node hota hai.
-    //    setTimeout ensures DOM is fully painted before assigning srcObject.
-    useEffect(() => {
-        if (!askForUsername) {
-            const timer = setTimeout(() => {
-                if (localVideoref.current && window.localStream) {
-                    localVideoref.current.srcObject = window.localStream;
-                    localVideoref.current.play().catch(() => { });
-                }
-            }, 150);
-            return () => clearTimeout(timer);
-        }
-    }, [askForUsername]);
 
     // ── Get camera + mic permissions ─────────────────────────────
     const getPermissions = async () => {
@@ -666,9 +662,9 @@ export default function VideoMeetComponent() {
             <div style={{ fontSize: '3rem' }}>📡</div>
             <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: '700' }}>Join Meeting</h2>
             <p style={{ margin: 0, color: '#94a3b8' }}>Code: <strong style={{ color: '#a78bfa' }}>{meetingCode}</strong></p>
-            {/* FIX: Lobby preview — srcObject getPermissions mein assign hoti hai */}
+            {/* Lobby preview — callback ref se stream turant assign hoti hai */}
             <video
-                ref={localVideoref}
+                ref={localVideoCallbackRef}
                 autoPlay
                 muted
                 playsInline
@@ -737,7 +733,7 @@ export default function VideoMeetComponent() {
                 {/* Self tile — hamesha pehle */}
                 <div className={styles.videoTile}>
                     <video
-                        ref={localVideoref}
+                        ref={localVideoCallbackRef}
                         autoPlay
                         muted
                         playsInline
