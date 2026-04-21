@@ -490,12 +490,10 @@ export default function VideoMeetComponent() {
                 }
                 setAdmitRequests(prev => prev.filter(r => r.socketId !== id));
 
-                // Har client ke saath peer connection banao (self ko skip karo)
-                clients.forEach(clientId => {
-                    if (clientId === socketIdRef.current) return; // self skip
-                    if (connections[clientId]) return; // already exists skip
+                // Helper: ek naya RTCPeerConnection banao aur setup karo
+                const createPeerConnection = (clientId) => {
+                    if (connections[clientId]) return connections[clientId]; // already exists
 
-                    // ── Naya RTCPeerConnection banao ──
                     const pc = new RTCPeerConnection(peerConfig);
                     connections[clientId] = pc;
 
@@ -506,7 +504,7 @@ export default function VideoMeetComponent() {
                         }
                     };
 
-                    // FIX: ontrack — remote video stream milne pe videos state update karo
+                    // Remote video stream milne pe videos state update karo
                     pc.ontrack = (event) => {
                         const remoteStream = event.streams[0];
                         if (!remoteStream) return;
@@ -516,17 +514,15 @@ export default function VideoMeetComponent() {
                             const name = participantNames.current[clientId] || "Participant";
 
                             if (exists) {
-                                // Stream update karo (replaceTrack ke baad naya stream aa sakta hai)
                                 return prev.map(v =>
                                     v.socketId === clientId ? { ...v, stream: remoteStream, name } : v
                                 );
                             }
-                            // Naya participant add karo
                             return [...prev, { socketId: clientId, stream: remoteStream, name }];
                         });
                     };
 
-                    // FIX: Connection state monitor karo — disconnected pe cleanup
+                    // Connection state monitor karo
                     pc.onconnectionstatechange = () => {
                         if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
                             console.log(`Peer ${clientId} connection ${pc.connectionState}`);
@@ -540,20 +536,28 @@ export default function VideoMeetComponent() {
                     streamToSend.getTracks().forEach(track => {
                         pc.addTrack(track, streamToSend);
                     });
-                });
 
-                // FIX: Agar main naya join kiya hoon toh sabhi existing members ko offer bhejo
+                    return pc;
+                };
+
                 if (id === socketIdRef.current) {
+                    // ── MAIN NAYA USER HOON ──
+                    // Sirf peer connections banao, offer mat bhejo.
+                    // Existing members offer karenge (woh "polite" side hain).
                     clients.forEach(clientId => {
                         if (clientId === socketIdRef.current) return;
-                        const pc = connections[clientId];
-                        if (!pc) return;
-
-                        pc.createOffer()
-                            .then(d => pc.setLocalDescription(d))
-                            .then(() => socketRef.current.emit('signal', clientId, JSON.stringify({ sdp: pc.localDescription })))
-                            .catch(e => console.log("createOffer error:", e));
+                        createPeerConnection(clientId);
                     });
+                } else {
+                    // ── MAIN EXISTING USER HOON, NAYA USER JOIN HUA ──
+                    // Naye user ke saath connection banao aur OFFER BHEJO.
+                    // Isse existing user ka stream bhi naye user tak pahunchega.
+                    const pc = createPeerConnection(id);
+
+                    pc.createOffer()
+                        .then(d => pc.setLocalDescription(d))
+                        .then(() => socketRef.current.emit('signal', id, JSON.stringify({ sdp: pc.localDescription })))
+                        .catch(e => console.log("createOffer error (existing->new):", e));
                 }
             });
         });
