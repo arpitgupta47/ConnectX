@@ -1,8 +1,9 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
+import server from '../environment';
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:8002";
+const SERVER_URL = server;
 
 // ── Animated background orbs ──────────────────────────────────────
 function Orbs() {
