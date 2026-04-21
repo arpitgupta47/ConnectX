@@ -259,6 +259,23 @@ export default function VideoMeetComponent() {
     const [showReactionPicker, setShowReactionPicker] = useState(false);
     const reactionIdRef = useRef(0);
 
+    // ── POLL STATE ─────────────────────────────────────────────────
+    const [showPollPanel, setShowPollPanel] = useState(false);
+    const [polls, setPolls] = useState([]);                    // all polls in room
+    const [activePoll, setActivePoll] = useState(null);        // currently live poll
+    const [pollQuestion, setPollQuestion] = useState('');
+    const [pollOptions, setPollOptions] = useState(['', '']);
+    const [myVotes, setMyVotes] = useState({});                // pollId -> optionIndex
+    const [pollCreating, setPollCreating] = useState(false);
+
+    // ── MEETING SCORE STATE ────────────────────────────────────────
+    const [showScorePanel, setShowScorePanel] = useState(false);
+    const [scoreData, setScoreData] = useState(null);
+    const [scoreLoading, setScoreLoading] = useState(false);
+    const speakingTime = useRef({});     // socketId -> seconds
+    const messageCount = useRef({});     // socketId -> count
+    const meetingStartTime = useRef(Date.now());
+
     // videos = array of { socketId, stream, name }
     const [videos, setVideos] = useState([]);
     const participantNames = useRef({});
@@ -434,6 +451,90 @@ export default function VideoMeetComponent() {
         }
     };
 
+    // ── POLL HELPERS ─────────────────────────────────────────────
+    const createPoll = () => {
+        const opts = pollOptions.filter(o => o.trim());
+        if (!pollQuestion.trim() || opts.length < 2) return;
+        const poll = {
+            id: Date.now().toString(),
+            question: pollQuestion.trim(),
+            options: opts,
+            results: new Array(opts.length).fill(0),
+            createdBy: username,
+            ended: false
+        };
+        socketRef.current.emit('poll-create', poll);
+        setPollQuestion('');
+        setPollOptions(['', '']);
+        setPollCreating(false);
+    };
+
+    const votePoll = (pollId, optionIndex) => {
+        if (myVotes[pollId] !== undefined) return;
+        setMyVotes(prev => ({ ...prev, [pollId]: optionIndex }));
+        socketRef.current.emit('poll-vote', { pollId, optionIndex });
+    };
+
+    const endPoll = (pollId) => {
+        socketRef.current.emit('poll-end', { pollId });
+    };
+
+    // ── AI MEETING SCORE ─────────────────────────────────────────
+    const generateMeetingScore = async () => {
+        setScoreLoading(true);
+        setShowScorePanel(true);
+        const duration = Math.round((Date.now() - meetingStartTime.current) / 60000);
+        const participants = [username, ...Object.keys(participantNames.current).map(k => participantNames.current[k])];
+        const msgData = Object.entries(messageCount.current).map(([k, v]) => `${k}: ${v} messages`).join(', ') || 'No messages';
+        const pollSummary = polls.map(p => `"${p.question}" — ${p.options.map((o, i) => `${o}: ${p.results[i]} votes`).join(', ')}`).join('\n') || 'No polls';
+
+        const prompt = `You are an expert meeting analyst. Analyze this meeting and give a detailed score report.
+
+Meeting Details:
+- Duration: ${duration} minutes
+- Participants: ${participants.join(', ')}
+- Total messages in chat: ${Object.values(messageCount.current).reduce((a, b) => a + b, 0)}
+- Message breakdown: ${msgData}
+- Polls conducted: ${pollSummary}
+
+Give a JSON response ONLY (no markdown) with this exact structure:
+{
+  "overallScore": 85,
+  "grade": "B+",
+  "summary": "2-3 sentence overall summary",
+  "metrics": {
+    "engagement": 80,
+    "participation": 75,
+    "productivity": 90,
+    "collaboration": 85
+  },
+  "highlights": ["positive point 1", "positive point 2"],
+  "improvements": ["improvement 1", "improvement 2"],
+  "participantScores": [
+    {"name": "Alice", "score": 90, "role": "Active Contributor"},
+    {"name": "Bob", "score": 70, "role": "Passive Listener"}
+  ]
+}`;
+
+        try {
+            const res = await fetch(\`\${server_url}/api/v1/users/ai/chat\`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [{ role: 'user', content: prompt }],
+                    systemPrompt: 'You are a meeting analytics AI. Always respond with valid JSON only, no markdown, no explanation.'
+                })
+            });
+            const data = await res.json();
+            const clean = data.reply.replace(/```json|```/g, '').trim();
+            const parsed = JSON.parse(clean);
+            setScoreData(parsed);
+        } catch (e) {
+            setScoreData({ error: 'Could not generate score. Make sure AI is configured.' });
+        }
+        setScoreLoading(false);
+    };
+
     // ── Socket connection + room logic ────────────────────────────
     const connectToSocketServer = () => {
         socketRef.current = io.connect(server_url, { secure: true, transports: ['websocket', 'polling'] });
@@ -447,6 +548,21 @@ export default function VideoMeetComponent() {
         socketRef.current.on('rejected-by-host', () => { setRejected(true); setIsWaiting(false); });
         socketRef.current.on('you-are-host', () => setIsHost(true));
         socketRef.current.on('play-join-sound', () => playJoinSound());
+        // ── POLL SOCKET EVENTS ──────────────────────────────────────
+        socketRef.current.on('poll-created', (poll) => {
+            setPolls(prev => [...prev, poll]);
+            setActivePoll(poll);
+            setShowPollPanel(true);
+        });
+        socketRef.current.on('poll-vote-update', ({ pollId, results }) => {
+            setPolls(prev => prev.map(p => p.id === pollId ? { ...p, results } : p));
+            setActivePoll(prev => prev?.id === pollId ? { ...prev, results } : prev);
+        });
+        socketRef.current.on('poll-ended', ({ pollId }) => {
+            setPolls(prev => prev.map(p => p.id === pollId ? { ...p, ended: true } : p));
+            setActivePoll(prev => prev?.id === pollId ? { ...prev, ended: true } : prev);
+        });
+
         socketRef.current.on('reaction', ({ emoji, name }) => {
             const id = reactionIdRef.current++;
             const x = 10 + Math.random() * 75;
@@ -793,13 +909,201 @@ export default function VideoMeetComponent() {
                 </div>
             )}
 
+            {/* ── POLL PANEL ─────────────────────────────────────── */}
+            {showPollPanel && (
+                <div style={{ position: 'absolute', right: '16px', top: '16px', bottom: '80px', width: '300px', background: 'rgba(10,10,20,0.97)', border: '1px solid rgba(102,126,234,0.3)', borderRadius: '20px', display: 'flex', flexDirection: 'column', zIndex: 30, backdropFilter: 'blur(20px)', boxShadow: '0 24px 80px rgba(0,0,0,0.7)', overflow: 'hidden' }}>
+                    {/* Header */}
+                    <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ width: '34px', height: '34px', background: 'linear-gradient(135deg,#f59e0b,#ef4444)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🗳️</div>
+                            <div>
+                                <div style={{ color: 'white', fontWeight: '700', fontSize: '13px' }}>Live Polls</div>
+                                <div style={{ color: '#94a3b8', fontSize: '11px' }}>{polls.length} poll{polls.length !== 1 ? 's' : ''} total</div>
+                            </div>
+                        </div>
+                        <button onClick={() => setShowPollPanel(false)} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px', borderRadius: '6px', padding: '4px 8px' }}>✕</button>
+                    </div>
+
+                    <div style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {/* Create Poll — host only */}
+                        {isHost && (
+                            <div>
+                                {!pollCreating ? (
+                                    <button onClick={() => setPollCreating(true)} style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg,#f59e0b,#ef4444)', border: 'none', borderRadius: '12px', color: 'white', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+                                        + Create New Poll
+                                    </button>
+                                ) : (
+                                    <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <input value={pollQuestion} onChange={e => setPollQuestion(e.target.value)} placeholder="Ask a question..." style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', padding: '8px 10px', fontSize: '13px', outline: 'none' }} />
+                                        {pollOptions.map((opt, i) => (
+                                            <div key={i} style={{ display: 'flex', gap: '6px' }}>
+                                                <input value={opt} onChange={e => { const o = [...pollOptions]; o[i] = e.target.value; setPollOptions(o); }} placeholder={`Option ${i + 1}`} style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', padding: '7px 10px', fontSize: '12px', outline: 'none' }} />
+                                                {pollOptions.length > 2 && <button onClick={() => setPollOptions(pollOptions.filter((_, j) => j !== i))} style={{ background: 'rgba(239,68,68,0.2)', border: 'none', color: '#ef4444', borderRadius: '6px', padding: '0 8px', cursor: 'pointer' }}>✕</button>}
+                                            </div>
+                                        ))}
+                                        {pollOptions.length < 5 && <button onClick={() => setPollOptions([...pollOptions, ''])} style={{ background: 'transparent', border: '1px dashed rgba(255,255,255,0.2)', borderRadius: '8px', color: '#94a3b8', padding: '6px', fontSize: '12px', cursor: 'pointer' }}>+ Add Option</button>}
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button onClick={createPoll} style={{ flex: 1, padding: '8px', background: 'linear-gradient(135deg,#f59e0b,#ef4444)', border: 'none', borderRadius: '8px', color: 'white', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>Launch Poll 🚀</button>
+                                            <button onClick={() => setPollCreating(false)} style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', fontSize: '13px' }}>Cancel</button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Polls list */}
+                        {polls.length === 0 && !pollCreating && (
+                            <p style={{ color: '#475569', textAlign: 'center', fontSize: '13px', marginTop: '20px' }}>
+                                {isHost ? 'Create a poll to get instant feedback from participants!' : 'No polls yet. Wait for the host to create one.'}
+                            </p>
+                        )}
+                        {[...polls].reverse().map(poll => {
+                            const total = poll.results.reduce((a, b) => a + b, 0);
+                            const voted = myVotes[poll.id] !== undefined;
+                            return (
+                                <div key={poll.id} style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${poll.ended ? 'rgba(255,255,255,0.08)' : 'rgba(245,158,11,0.3)'}`, borderRadius: '14px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <div style={{ color: 'white', fontWeight: '600', fontSize: '13px', lineHeight: 1.4, flex: 1 }}>{poll.question}</div>
+                                        {!poll.ended && isHost && <button onClick={() => endPoll(poll.id)} style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', borderRadius: '6px', padding: '3px 8px', fontSize: '11px', cursor: 'pointer', flexShrink: 0, marginLeft: '8px' }}>End</button>}
+                                        {poll.ended && <span style={{ color: '#64748b', fontSize: '11px', flexShrink: 0, marginLeft: '8px' }}>Ended</span>}
+                                    </div>
+                                    {poll.options.map((opt, i) => {
+                                        const pct = total > 0 ? Math.round((poll.results[i] / total) * 100) : 0;
+                                        const isMyVote = myVotes[poll.id] === i;
+                                        const showBar = voted || poll.ended;
+                                        return (
+                                            <div key={i}>
+                                                {!voted && !poll.ended ? (
+                                                    <button onClick={() => votePoll(poll.id, i)} style={{ width: '100%', padding: '9px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', color: 'white', fontSize: '13px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
+                                                        onMouseEnter={e => e.target.style.borderColor = 'rgba(245,158,11,0.5)'}
+                                                        onMouseLeave={e => e.target.style.borderColor = 'rgba(255,255,255,0.12)'}>
+                                                        {opt}
+                                                    </button>
+                                                ) : (
+                                                    <div style={{ position: 'relative' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                            <span style={{ color: isMyVote ? '#f59e0b' : 'white', fontSize: '12px', fontWeight: isMyVote ? '700' : '400' }}>{opt} {isMyVote ? '✓' : ''}</span>
+                                                            <span style={{ color: '#94a3b8', fontSize: '12px' }}>{pct}% ({poll.results[i]})</span>
+                                                        </div>
+                                                        <div style={{ height: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
+                                                            <div style={{ height: '100%', width: `${pct}%`, background: isMyVote ? 'linear-gradient(90deg,#f59e0b,#ef4444)' : 'rgba(255,255,255,0.25)', borderRadius: '3px', transition: 'width 0.5s ease' }} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                    <div style={{ color: '#475569', fontSize: '11px' }}>{total} vote{total !== 1 ? 's' : ''} • by {poll.createdBy}</div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* ── MEETING SCORE PANEL ──────────────────────────────── */}
+            {showScorePanel && (
+                <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: '360px', maxHeight: '80vh', background: 'rgba(10,10,20,0.98)', border: '1px solid rgba(102,126,234,0.4)', borderRadius: '24px', display: 'flex', flexDirection: 'column', zIndex: 40, backdropFilter: 'blur(20px)', boxShadow: '0 32px 100px rgba(0,0,0,0.8)', overflow: 'hidden' }}>
+                    <div style={{ padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg,#667eea,#06b6d4)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📊</div>
+                            <div>
+                                <div style={{ color: 'white', fontWeight: '700', fontSize: '15px' }}>Meeting Score</div>
+                                <div style={{ color: '#94a3b8', fontSize: '11px' }}>AI-powered analytics</div>
+                            </div>
+                        </div>
+                        <button onClick={() => setShowScorePanel(false)} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px', borderRadius: '6px', padding: '4px 8px' }}>✕</button>
+                    </div>
+
+                    <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+                        {scoreLoading && (
+                            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                <div style={{ fontSize: '32px', marginBottom: '12px' }}>🤖</div>
+                                <div style={{ color: '#94a3b8', fontSize: '14px' }}>AI is analyzing your meeting...</div>
+                                <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginTop: '16px' }}>
+                                    {[0,1,2].map(i => <div key={i} style={{ width: '8px', height: '8px', background: '#667eea', borderRadius: '50%', animation: `bounce 1.2s ease-in-out ${i*0.2}s infinite` }} />)}
+                                </div>
+                            </div>
+                        )}
+                        {scoreData && !scoreLoading && (
+                            scoreData.error ? <p style={{ color: '#ef4444', textAlign: 'center', fontSize: '13px' }}>{scoreData.error}</p> : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    {/* Overall score */}
+                                    <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(102,126,234,0.1)', borderRadius: '16px', border: '1px solid rgba(102,126,234,0.2)' }}>
+                                        <div style={{ fontSize: '56px', fontWeight: '800', background: 'linear-gradient(135deg,#667eea,#06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{scoreData.overallScore}</div>
+                                        <div style={{ fontSize: '24px', color: '#f59e0b', fontWeight: '700' }}>{scoreData.grade}</div>
+                                        <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '6px', lineHeight: 1.5 }}>{scoreData.summary}</div>
+                                    </div>
+
+                                    {/* Metrics */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <div style={{ color: 'white', fontSize: '13px', fontWeight: '700', marginBottom: '2px' }}>📈 Metrics</div>
+                                        {Object.entries(scoreData.metrics || {}).map(([key, val]) => (
+                                            <div key={key}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                                                    <span style={{ color: '#94a3b8', fontSize: '12px', textTransform: 'capitalize' }}>{key}</span>
+                                                    <span style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>{val}/100</span>
+                                                </div>
+                                                <div style={{ height: '5px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px' }}>
+                                                    <div style={{ height: '100%', width: `${val}%`, background: 'linear-gradient(90deg,#667eea,#06b6d4)', borderRadius: '3px' }} />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Highlights */}
+                                    {scoreData.highlights?.length > 0 && (
+                                        <div>
+                                            <div style={{ color: 'white', fontSize: '13px', fontWeight: '700', marginBottom: '8px' }}>✅ Highlights</div>
+                                            {scoreData.highlights.map((h, i) => <div key={i} style={{ color: '#86efac', fontSize: '12px', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>• {h}</div>)}
+                                        </div>
+                                    )}
+
+                                    {/* Improvements */}
+                                    {scoreData.improvements?.length > 0 && (
+                                        <div>
+                                            <div style={{ color: 'white', fontSize: '13px', fontWeight: '700', marginBottom: '8px' }}>💡 Improvements</div>
+                                            {scoreData.improvements.map((h, i) => <div key={i} style={{ color: '#fca5a5', fontSize: '12px', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>• {h}</div>)}
+                                        </div>
+                                    )}
+
+                                    {/* Participant scores */}
+                                    {scoreData.participantScores?.length > 0 && (
+                                        <div>
+                                            <div style={{ color: 'white', fontSize: '13px', fontWeight: '700', marginBottom: '8px' }}>👥 Participants</div>
+                                            {scoreData.participantScores.map((p, i) => (
+                                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', marginBottom: '6px' }}>
+                                                    <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg,#667eea,#764ba2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '14px', flexShrink: 0 }}>{p.name?.[0]?.toUpperCase()}</div>
+                                                    <div style={{ flex: 1 }}>
+                                                        <div style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>{p.name}</div>
+                                                        <div style={{ color: '#64748b', fontSize: '11px' }}>{p.role}</div>
+                                                    </div>
+                                                    <div style={{ fontSize: '18px', fontWeight: '800', color: p.score >= 80 ? '#4ade80' : p.score >= 60 ? '#f59e0b' : '#ef4444' }}>{p.score}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* CONTROL BAR */}
             <div className={styles.buttonContainers}>
-                <button
-                    onClick={() => setShowAI(p => !p)}
-                    title="AI Meeting Assistant"
+                <button onClick={() => setShowAI(p => !p)} title="AI Meeting Assistant"
                     style={{ background: showAI ? 'linear-gradient(135deg,#667eea,#764ba2)' : 'rgba(102,126,234,0.15)', border: `1px solid ${showAI ? '#667eea' : 'rgba(102,126,234,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
                     🤖 AI
+                </button>
+                <button onClick={() => setShowPollPanel(p => !p)} title="Live Polls"
+                    style={{ background: showPollPanel ? 'linear-gradient(135deg,#f59e0b,#ef4444)' : 'rgba(245,158,11,0.15)', border: `1px solid ${showPollPanel ? '#f59e0b' : 'rgba(245,158,11,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap', position: 'relative' }}>
+                    🗳️ Poll
+                    {polls.filter(p => !p.ended).length > 0 && <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: 'white', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' }}>{polls.filter(p => !p.ended).length}</span>}
+                </button>
+                <button onClick={generateMeetingScore} title="AI Meeting Score"
+                    style={{ background: showScorePanel ? 'linear-gradient(135deg,#06b6d4,#667eea)' : 'rgba(6,182,212,0.15)', border: `1px solid ${showScorePanel ? '#06b6d4' : 'rgba(6,182,212,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
+                    📊 Score
                 </button>
                 <IconButton onClick={handleVideo} style={{ color: video ? 'white' : '#ff5555' }} title={video ? 'Turn off camera' : 'Turn on camera'}>
                     {video ? <VideocamIcon /> : <VideocamOffIcon />}
