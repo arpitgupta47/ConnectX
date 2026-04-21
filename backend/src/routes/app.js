@@ -15,40 +15,14 @@ const server = createHttpServer(app);
 connectToSocket(server);
 
 // ================= CORS =================
-const allowedOrigins = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://192.168.1.8:5174",
-    "https://connectx-frontend.onrender.com"
-];
-
-const corsOptions = {
-    origin: function (origin, callback) {
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) return callback(null, true);
-        return callback(new Error("Not allowed by CORS"));
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-    optionsSuccessStatus: 200
-};
-
-app.use(cors(corsOptions));
-
-// FIX: Express v5 does not support wildcard "*" in app.options()
-// Use app.use middleware for preflight instead
+// Allow all origins (works for any Render/Vercel/local frontend URL)
 app.use((req, res, next) => {
-    if (req.method === "OPTIONS") {
-        const origin = req.headers.origin;
-        if (!origin || allowedOrigins.includes(origin)) {
-            res.setHeader("Access-Control-Allow-Origin", origin || "*");
-            res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-            res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-            res.setHeader("Access-Control-Allow-Credentials", "true");
-            return res.sendStatus(200);
-        }
-    }
+    const origin = req.headers.origin;
+    if (origin) res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    if (req.method === "OPTIONS") return res.sendStatus(200);
     next();
 });
 
