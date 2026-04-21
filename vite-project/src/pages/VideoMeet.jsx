@@ -92,7 +92,7 @@ function AIAssistant({ isOpen, onClose, username, meetingCode, participants }) {
             const reply = await callAI(apiMsgs, systemPrompt);
             setMessages(prev => [...prev, { role: 'assistant', text: reply }]);
         } catch (e) {
-            setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ ${e.message}\n\nMake sure ANTHROPIC_API_KEY is set in backend .env` }]);
+            setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ ${e.message}\n\nMake sure GROQ_API_KEY is set in Render environment` }]);
         }
         setLoading(false);
     };
@@ -235,17 +235,6 @@ export default function VideoMeetComponent() {
     const socketIdRef = useRef();
     const localVideoref = useRef();
 
-    // ── Callback ref: jab bhi local video DOM node mount ho,
-    //    turant stream assign karo — koi setTimeout nahi chahiye.
-    //    Yeh mobile browsers pe bhi reliably kaam karta hai.
-    const localVideoCallbackRef = useCallback((node) => {
-        localVideoref.current = node;
-        if (node && window.localStream) {
-            node.srcObject = window.localStream;
-            node.play().catch(() => { });
-        }
-    }, []);
-
     const [videoAvailable, setVideoAvailable] = useState(true);
     const [audioAvailable, setAudioAvailable] = useState(true);
     const [video, setVideo] = useState(false);
@@ -280,6 +269,21 @@ export default function VideoMeetComponent() {
 
     // ── Screen share trigger ──────────────────────────────────────
     useEffect(() => { if (screen) getDisplayMedia(); }, [screen]);
+
+    // ── FIX: Jab lobby screen se meeting screen pe jaate hain,
+    //    localVideoref naya DOM node hota hai.
+    //    setTimeout ensures DOM is fully painted before assigning srcObject.
+    useEffect(() => {
+        if (!askForUsername) {
+            const timer = setTimeout(() => {
+                if (localVideoref.current && window.localStream) {
+                    localVideoref.current.srcObject = window.localStream;
+                    localVideoref.current.play().catch(() => { });
+                }
+            }, 150);
+            return () => clearTimeout(timer);
+        }
+    }, [askForUsername]);
 
     // ── Get camera + mic permissions ─────────────────────────────
     const getPermissions = async () => {
@@ -486,10 +490,12 @@ export default function VideoMeetComponent() {
                 }
                 setAdmitRequests(prev => prev.filter(r => r.socketId !== id));
 
-                // Helper: ek naya RTCPeerConnection banao aur setup karo
-                const createPeerConnection = (clientId) => {
-                    if (connections[clientId]) return connections[clientId]; // already exists
+                // Har client ke saath peer connection banao (self ko skip karo)
+                clients.forEach(clientId => {
+                    if (clientId === socketIdRef.current) return; // self skip
+                    if (connections[clientId]) return; // already exists skip
 
+                    // ── Naya RTCPeerConnection banao ──
                     const pc = new RTCPeerConnection(peerConfig);
                     connections[clientId] = pc;
 
@@ -500,7 +506,7 @@ export default function VideoMeetComponent() {
                         }
                     };
 
-                    // Remote video stream milne pe videos state update karo
+                    // FIX: ontrack — remote video stream milne pe videos state update karo
                     pc.ontrack = (event) => {
                         const remoteStream = event.streams[0];
                         if (!remoteStream) return;
@@ -510,15 +516,17 @@ export default function VideoMeetComponent() {
                             const name = participantNames.current[clientId] || "Participant";
 
                             if (exists) {
+                                // Stream update karo (replaceTrack ke baad naya stream aa sakta hai)
                                 return prev.map(v =>
                                     v.socketId === clientId ? { ...v, stream: remoteStream, name } : v
                                 );
                             }
+                            // Naya participant add karo
                             return [...prev, { socketId: clientId, stream: remoteStream, name }];
                         });
                     };
 
-                    // Connection state monitor karo
+                    // FIX: Connection state monitor karo — disconnected pe cleanup
                     pc.onconnectionstatechange = () => {
                         if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
                             console.log(`Peer ${clientId} connection ${pc.connectionState}`);
@@ -532,28 +540,20 @@ export default function VideoMeetComponent() {
                     streamToSend.getTracks().forEach(track => {
                         pc.addTrack(track, streamToSend);
                     });
+                });
 
-                    return pc;
-                };
-
+                // FIX: Agar main naya join kiya hoon toh sabhi existing members ko offer bhejo
                 if (id === socketIdRef.current) {
-                    // ── MAIN NAYA USER HOON ──
-                    // Sirf peer connections banao, offer mat bhejo.
-                    // Existing members offer karenge (woh "polite" side hain).
                     clients.forEach(clientId => {
                         if (clientId === socketIdRef.current) return;
-                        createPeerConnection(clientId);
-                    });
-                } else {
-                    // ── MAIN EXISTING USER HOON, NAYA USER JOIN HUA ──
-                    // Naye user ke saath connection banao aur OFFER BHEJO.
-                    // Isse existing user ka stream bhi naye user tak pahunchega.
-                    const pc = createPeerConnection(id);
+                        const pc = connections[clientId];
+                        if (!pc) return;
 
-                    pc.createOffer()
-                        .then(d => pc.setLocalDescription(d))
-                        .then(() => socketRef.current.emit('signal', id, JSON.stringify({ sdp: pc.localDescription })))
-                        .catch(e => console.log("createOffer error (existing->new):", e));
+                        pc.createOffer()
+                            .then(d => pc.setLocalDescription(d))
+                            .then(() => socketRef.current.emit('signal', clientId, JSON.stringify({ sdp: pc.localDescription })))
+                            .catch(e => console.log("createOffer error:", e));
+                    });
                 }
             });
         });
@@ -662,9 +662,9 @@ export default function VideoMeetComponent() {
             <div style={{ fontSize: '3rem' }}>📡</div>
             <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: '700' }}>Join Meeting</h2>
             <p style={{ margin: 0, color: '#94a3b8' }}>Code: <strong style={{ color: '#a78bfa' }}>{meetingCode}</strong></p>
-            {/* Lobby preview — callback ref se stream turant assign hoti hai */}
+            {/* FIX: Lobby preview — srcObject getPermissions mein assign hoti hai */}
             <video
-                ref={localVideoCallbackRef}
+                ref={localVideoref}
                 autoPlay
                 muted
                 playsInline
@@ -733,7 +733,7 @@ export default function VideoMeetComponent() {
                 {/* Self tile — hamesha pehle */}
                 <div className={styles.videoTile}>
                     <video
-                        ref={localVideoCallbackRef}
+                        ref={localVideoref}
                         autoPlay
                         muted
                         playsInline
