@@ -1,270 +1,485 @@
-import React, { useState, useContext, useEffect, useRef } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
 
-// Floating orb background
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:8002";
+
+// ── Animated background orbs ──────────────────────────────────────
 function Orbs() {
     return (
         <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', zIndex: 0, pointerEvents: 'none' }}>
-            {[
-                { w: 400, h: 400, top: '-10%', left: '-10%', c1: '#667eea', c2: '#764ba2', dur: '18s' },
-                { w: 300, h: 300, top: '60%', right: '-5%', c1: '#f472b6', c2: '#a78bfa', dur: '22s' },
-                { w: 250, h: 250, top: '30%', left: '60%', c1: '#34d399', c2: '#667eea', dur: '15s' },
-            ].map((o, i) => (
-                <div key={i} style={{
-                    position: 'absolute', width: o.w, height: o.h,
-                    top: o.top, left: o.left, right: o.right,
-                    borderRadius: '50%',
-                    background: `radial-gradient(circle, ${o.c1}33, ${o.c2}11)`,
-                    filter: 'blur(60px)',
-                    animation: `orbFloat ${o.dur} ease-in-out infinite alternate`,
-                    animationDelay: `${i * 2}s`
-                }} />
-            ))}
+            <div style={{ position: 'absolute', width: 500, height: 500, top: '-15%', left: '-10%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(56,189,248,0.1), transparent 70%)', filter: 'blur(60px)', animation: 'orbFloat 20s ease-in-out infinite alternate' }} />
+            <div style={{ position: 'absolute', width: 400, height: 400, top: '55%', right: '-8%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(129,140,248,0.1), transparent 70%)', filter: 'blur(60px)', animation: 'orbFloat 16s ease-in-out infinite alternate-reverse' }} />
+            <div style={{ position: 'absolute', width: 300, height: 300, top: '35%', left: '55%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(244,114,182,0.07), transparent 70%)', filter: 'blur(50px)', animation: 'orbFloat 24s ease-in-out infinite alternate' }} />
         </div>
     );
 }
 
-// Password strength meter
+// ── Password strength ─────────────────────────────────────────────
 function PasswordStrength({ password }) {
+    if (!password) return null;
     const checks = [
-        { label: 'At least 8 characters', ok: password.length >= 8 },
-        { label: 'Uppercase letter', ok: /[A-Z]/.test(password) },
-        { label: 'Number', ok: /[0-9]/.test(password) },
-        { label: 'Special character', ok: /[^A-Za-z0-9]/.test(password) },
+        password.length >= 8,
+        /[A-Z]/.test(password),
+        /[0-9]/.test(password),
+        /[^A-Za-z0-9]/.test(password),
     ];
-    const score = checks.filter(c => c.ok).length;
+    const score = checks.filter(Boolean).length;
     const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e'];
     const labels = ['Weak', 'Fair', 'Good', 'Strong'];
-    if (!password) return null;
     return (
-        <div style={{ marginBottom: '14px' }}>
-            <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
-                {[0,1,2,3].map(i => (
-                    <div key={i} style={{ height: '4px', flex: 1, borderRadius: '2px', background: i < score ? colors[score-1] : 'rgba(255,255,255,0.1)', transition: 'background 0.3s' }} />
+        <div style={{ marginTop: '8px' }}>
+            <div style={{ display: 'flex', gap: '4px', marginBottom: '5px' }}>
+                {[0, 1, 2, 3].map(i => (
+                    <div key={i} style={{ height: '3px', flex: 1, borderRadius: '2px', background: i < score ? colors[score - 1] : 'rgba(255,255,255,0.08)', transition: 'background 0.3s' }} />
                 ))}
             </div>
-            <div style={{ fontSize: '12px', color: score > 0 ? colors[score-1] : '#666', fontWeight: '600' }}>{score > 0 ? labels[score-1] : ''}</div>
+            <span style={{ fontSize: '11px', color: colors[score - 1] || '#475569', fontWeight: '600' }}>{labels[score - 1] || ''}</span>
         </div>
     );
 }
 
+// ── ConnectX Logo SVG ─────────────────────────────────────────────
+function Logo({ size = 48 }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="authLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#38bdf8" />
+                    <stop offset="100%" stopColor="#818cf8" />
+                </linearGradient>
+            </defs>
+            <path d="M20 2L36 11V29L20 38L4 29V11L20 2Z" fill="url(#authLogoGrad)" opacity="0.15" />
+            <path d="M20 2L36 11V29L20 38L4 29V11L20 2Z" stroke="url(#authLogoGrad)" strokeWidth="1.5" fill="none" />
+            <rect x="9" y="14" width="15" height="12" rx="2.5" fill="url(#authLogoGrad)" />
+            <path d="M24 17L31 13V27L24 23V17Z" fill="url(#authLogoGrad)" />
+            <circle cx="12" cy="11" r="1.2" fill="#38bdf8" opacity="0.8" />
+            <circle cx="20" cy="8" r="1.2" fill="#818cf8" opacity="0.8" />
+            <circle cx="28" cy="11" r="1.2" fill="#38bdf8" opacity="0.8" />
+        </svg>
+    );
+}
+
+// ── Input Field Component ─────────────────────────────────────────
+function InputField({ label, type = 'text', placeholder, value, onChange, icon, rightEl, required }) {
+    const [focused, setFocused] = useState(false);
+    return (
+        <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', color: '#64748b', fontSize: '12px', fontWeight: '600', marginBottom: '7px', letterSpacing: '0.4px', textTransform: 'uppercase' }}>{label}</label>
+            <div style={{ position: 'relative' }}>
+                {icon && (
+                    <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px', pointerEvents: 'none', opacity: 0.5 }}>{icon}</span>
+                )}
+                <input
+                    type={type}
+                    placeholder={placeholder}
+                    value={value}
+                    onChange={onChange}
+                    required={required}
+                    onFocus={() => setFocused(true)}
+                    onBlur={() => setFocused(false)}
+                    style={{
+                        width: '100%',
+                        padding: `13px ${rightEl ? '48px' : '16px'} 13px ${icon ? '42px' : '16px'}`,
+                        background: focused ? 'rgba(56,189,248,0.06)' : 'rgba(255,255,255,0.04)',
+                        border: `1.5px solid ${focused ? 'rgba(56,189,248,0.6)' : 'rgba(255,255,255,0.09)'}`,
+                        borderRadius: '12px',
+                        color: 'white',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'all 0.22s',
+                        boxSizing: 'border-box',
+                        boxShadow: focused ? '0 0 0 3px rgba(56,189,248,0.1)' : 'none',
+                        fontFamily: 'inherit',
+                    }}
+                />
+                {rightEl && (
+                    <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }}>{rightEl}</div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ── Primary Button ────────────────────────────────────────────────
+function PrimaryBtn({ children, onClick, loading, type = 'button', disabled }) {
+    return (
+        <button type={type} onClick={onClick} disabled={loading || disabled}
+            style={{ width: '100%', padding: '14px', background: loading ? 'rgba(56,189,248,0.35)' : 'linear-gradient(135deg, #38bdf8, #818cf8)', border: 'none', color: 'white', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: loading || disabled ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'all 0.2s', boxShadow: loading ? 'none' : '0 6px 24px rgba(56,189,248,0.3)', fontFamily: 'inherit', letterSpacing: '0.2px' }}
+            onMouseEnter={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 10px 32px rgba(56,189,248,0.45)'; } }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = loading ? 'none' : '0 6px 24px rgba(56,189,248,0.3)'; }}>
+            {loading ? (
+                <><div style={{ width: '17px', height: '17px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />Please wait...</>
+            ) : children}
+        </button>
+    );
+}
+
+// ── Google Button ─────────────────────────────────────────────────
+function GoogleBtn({ onClick }) {
+    return (
+        <button type="button" onClick={onClick}
+            style={{ width: '100%', padding: '13px', background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white', fontSize: '14px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'all 0.2s', fontFamily: 'inherit' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}>
+            <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+                <path d="M47.5 24.5C47.5 22.6 47.3 20.8 47 19H24V29.4H37.3C36.7 32.4 35 34.9 32.5 36.6V43H40.3C44.7 38.9 47.5 32.2 47.5 24.5Z" fill="#4285F4"/>
+                <path d="M24 48C30.6 48 36.2 45.8 40.3 43L32.5 36.6C30.3 38.1 27.4 39 24 39C17.6 39 12.2 34.9 10.2 29.2H2.2V35.8C6.3 44 14.5 48 24 48Z" fill="#34A853"/>
+                <path d="M10.2 29.2C9.7 27.7 9.5 26.1 9.5 24.5C9.5 22.9 9.8 21.3 10.2 19.8V13.2H2.2C0.8 16 0 19.2 0 22.5C0 25.8 0.8 29 2.2 31.8L10.2 29.2Z" fill="#FBBC05"/>
+                <path d="M24 10C27.7 10 30.9 11.3 33.5 13.7L40.5 6.7C36.2 2.7 30.6 0 24 0C14.5 0 6.3 4 2.2 12.2L10.2 18.8C12.2 13.1 17.6 10 24 10Z" fill="#EA4335"/>
+            </svg>
+            Continue with Google
+        </button>
+    );
+}
+
+// ── Alert box ─────────────────────────────────────────────────────
+function Alert({ type, msg }) {
+    if (!msg) return null;
+    const isErr = type === 'error';
+    return (
+        <div style={{ background: isErr ? 'rgba(239,68,68,0.08)' : 'rgba(74,222,128,0.08)', border: `1px solid ${isErr ? 'rgba(239,68,68,0.25)' : 'rgba(74,222,128,0.25)'}`, borderRadius: '10px', padding: '11px 14px', marginBottom: '18px', color: isErr ? '#f87171' : '#4ade80', fontSize: '13px', display: 'flex', alignItems: 'flex-start', gap: '8px', lineHeight: 1.5 }}>
+            {isErr ? '⚠️' : '✅'} {msg}
+        </div>
+    );
+}
+
+// ── Divider ───────────────────────────────────────────────────────
+function Divider() {
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '18px 0' }}>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.07)' }} />
+            <span style={{ color: '#334155', fontSize: '12px', fontWeight: '500', flexShrink: 0 }}>OR</span>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.07)' }} />
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────
+// MAIN COMPONENT
+// ─────────────────────────────────────────────────────────────────
 export default function Authentication() {
-    const [formState, setFormState] = useState(0); // 0=login, 1=register
-    const [name, setName] = useState('');
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPass, setShowPass] = useState(false);
-    const [rememberMe, setRememberMe] = useState(false);
+    // 'signin' | 'signup' | 'forgot' | 'otp'
+    const [screen, setScreen] = useState('signin');
+    const [shake, setShake] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [shake, setShake] = useState(false);
-    const [forgotMode, setForgotMode] = useState(false);
-    const [forgotEmail, setForgotEmail] = useState('');
-    const [forgotSent, setForgotSent] = useState(false);
-    const [focusedField, setFocusedField] = useState('');
+
+    // Sign In
+    const [siUsername, setSiUsername] = useState('');
+    const [siPassword, setSiPassword] = useState('');
+    const [siShowPass, setSiShowPass] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
+
+    // Sign Up
+    const [suName, setSuName] = useState('');
+    const [suUsername, setSuUsername] = useState('');
+    const [suEmail, setSuEmail] = useState('');
+    const [suPassword, setSuPassword] = useState('');
+    const [suShowPass, setSuShowPass] = useState(false);
+
+    // Forgot / OTP
+    const [fpEmail, setFpEmail] = useState('');
+    const [fpOtp, setFpOtp] = useState('');
+    const [fpNewPass, setFpNewPass] = useState('');
+    const [fpShowPass, setFpShowPass] = useState(false);
 
     const navigate = useNavigate();
     const { handleRegister, handleLogin } = useContext(AuthContext);
 
-    // Load remembered username
     useEffect(() => {
         const saved = localStorage.getItem('cx_remember');
-        if (saved) { setUsername(saved); setRememberMe(true); }
+        if (saved) { setSiUsername(saved); setRememberMe(true); }
     }, []);
 
-    const switchForm = (s) => {
-        setFormState(s); setError(''); setSuccess('');
-        setName(''); setPassword(''); setForgotMode(false);
-    };
+    const reset = () => { setError(''); setSuccess(''); };
+    const goTo = (s) => { reset(); setScreen(s); };
 
-    const handleAuth = async (e) => {
+    const triggerShake = () => { setShake(true); setTimeout(() => setShake(false), 600); };
+
+    // ── SIGN IN ───────────────────────────────────────────────────
+    const handleSignIn = async (e) => {
         e.preventDefault();
-        setError(''); setSuccess(''); setLoading(true);
+        reset(); setLoading(true);
         try {
-            if (formState === 0) {
-                await handleLogin(username, password);
-                if (rememberMe) localStorage.setItem('cx_remember', username);
-                else localStorage.removeItem('cx_remember');
-                navigate('/home');
-            } else {
-                if (!name.trim()) throw new Error('Full name is required');
-                if (password.length < 6) throw new Error('Password must be at least 6 characters');
-                const result = await handleRegister(name, username, password);
-                setSuccess(result || 'Account created! Please sign in.');
-                setFormState(0);
-                setPassword('');
-            }
+            await handleLogin(siUsername, siPassword);
+            if (rememberMe) localStorage.setItem('cx_remember', siUsername);
+            else localStorage.removeItem('cx_remember');
+            navigate('/home');
         } catch (err) {
-            const msg = err.response?.data?.message || err.message || 'Something went wrong';
-            setError(msg);
-            setShake(true);
-            setTimeout(() => setShake(false), 600);
+            setError(err.response?.data?.message || err.message || 'Login failed');
+            triggerShake();
         } finally { setLoading(false); }
     };
 
-    const handleForgot = (e) => {
+    // ── SIGN UP ───────────────────────────────────────────────────
+    const handleSignUp = async (e) => {
         e.preventDefault();
-        if (!forgotEmail.trim()) return;
-        // Simulate — real implementation needs backend email endpoint
-        setTimeout(() => setForgotSent(true), 800);
+        reset();
+        if (suPassword.length < 6) { setError('Password must be at least 6 characters'); triggerShake(); return; }
+        setLoading(true);
+        try {
+            const res = await fetch(`${SERVER_URL}/api/v1/users/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: suName, username: suUsername, email: suEmail, password: suPassword }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+            setSuccess(data.message || 'Account created! Please sign in.');
+            setSuName(''); setSuUsername(''); setSuEmail(''); setSuPassword('');
+            setTimeout(() => goTo('signin'), 1500);
+        } catch (err) {
+            setError(err.message || 'Registration failed');
+            triggerShake();
+        } finally { setLoading(false); }
     };
 
-    const inputStyle = (field) => ({
-        width: '100%', padding: '14px 16px',
-        background: focusedField === field ? 'rgba(102,126,234,0.08)' : 'rgba(255,255,255,0.04)',
-        border: `1px solid ${focusedField === field ? 'rgba(102,126,234,0.7)' : 'rgba(255,255,255,0.1)'}`,
-        borderRadius: '12px', color: 'white', fontSize: '15px', outline: 'none',
-        transition: 'all 0.25s', boxSizing: 'border-box',
-        boxShadow: focusedField === field ? '0 0 0 3px rgba(102,126,234,0.15)' : 'none',
-    });
+    // ── SEND OTP ──────────────────────────────────────────────────
+    const handleSendOtp = async (e) => {
+        e.preventDefault();
+        reset();
+        if (!fpEmail.trim()) { setError('Please enter your email'); return; }
+        setLoading(true);
+        try {
+            const res = await fetch(`${SERVER_URL}/api/v1/users/send-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: fpEmail }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+            setSuccess('OTP sent! Check your email inbox.');
+            goTo('otp');
+        } catch (err) {
+            setError(err.message || 'Failed to send OTP');
+            triggerShake();
+        } finally { setLoading(false); }
+    };
+
+    // ── RESET PASSWORD ────────────────────────────────────────────
+    const handleResetPassword = async (e) => {
+        e.preventDefault();
+        reset();
+        if (fpNewPass.length < 6) { setError('Password must be at least 6 characters'); return; }
+        setLoading(true);
+        try {
+            const res = await fetch(`${SERVER_URL}/api/v1/users/reset-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: fpEmail, otp: fpOtp, newPassword: fpNewPass }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+            setSuccess(data.message || 'Password reset! Please sign in.');
+            setFpOtp(''); setFpNewPass('');
+            setTimeout(() => goTo('signin'), 2000);
+        } catch (err) {
+            setError(err.message || 'Reset failed');
+            triggerShake();
+        } finally { setLoading(false); }
+    };
+
+    const card = {
+        position: 'relative', zIndex: 1, width: '100%', maxWidth: '420px',
+        animation: shake ? 'shake 0.5s ease' : 'fadeUp 0.5s ease',
+    };
+
+    const cardInner = {
+        background: 'rgba(255,255,255,0.03)',
+        backdropFilter: 'blur(24px)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: '24px',
+        padding: '36px 32px',
+        boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
+    };
+
+    const showPassBtn = (show, setShow) => (
+        <button type="button" onClick={() => setShow(p => !p)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '17px', color: '#475569', padding: 0, lineHeight: 1 }}>
+            {show ? '🙈' : '👁️'}
+        </button>
+    );
 
     return (
-        <div style={{ minHeight: '100vh', background: '#0a0a14', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', fontFamily: "'Inter', sans-serif", position: 'relative', overflow: 'hidden' }}>
+        <div style={{ minHeight: '100vh', background: '#040812', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', fontFamily: "'Sora', 'DM Sans', sans-serif", position: 'relative', overflow: 'hidden' }}>
+            <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
             <Orbs />
 
-            <div style={{
-                position: 'relative', zIndex: 1, width: '100%', maxWidth: '440px',
-                animation: shake ? 'shake 0.5s ease' : 'fadeUp 0.5s ease',
-            }}>
-                {/* LOGO */}
-                <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                    <div style={{ width: '52px', height: '52px', background: 'linear-gradient(135deg,#667eea,#764ba2)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', margin: '0 auto 12px' }}>📡</div>
-                    <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: '800', background: 'linear-gradient(90deg,#667eea,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>ConnectX</h1>
-                    <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: '14px' }}>Connect. Collaborate. Create.</p>
+            <div style={card}>
+                {/* Logo */}
+                <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                        <Logo size={52} />
+                    </div>
+                    <h1 style={{ margin: 0, fontSize: '1.7rem', fontWeight: '800', background: 'linear-gradient(90deg,#38bdf8,#818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.5px' }}>ConnectX</h1>
+                    <p style={{ margin: '5px 0 0', color: '#334155', fontSize: '13px' }}>Connect. Collaborate. Create.</p>
                 </div>
 
-                {/* CARD */}
-                <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '36px', boxShadow: '0 24px 80px rgba(0,0,0,0.5)' }}>
+                <div style={cardInner}>
 
-                    {/* FORGOT PASSWORD MODE */}
-                    {forgotMode ? (
+                    {/* ── SIGN IN SCREEN ─────────────────────────── */}
+                    {screen === 'signin' && (
                         <>
-                            <button onClick={() => setForgotMode(false)} style={{ background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontSize: '14px', marginBottom: '20px', padding: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                ← Back to Sign In
-                            </button>
-                            <h2 style={{ color: 'white', margin: '0 0 8px', fontSize: '1.4rem', fontWeight: '700' }}>Reset Password</h2>
-                            <p style={{ color: '#64748b', fontSize: '14px', margin: '0 0 24px', lineHeight: 1.6 }}>Enter your username and we'll send a reset link to your registered email.</p>
-                            {!forgotSent ? (
-                                <form onSubmit={handleForgot}>
-                                    <input type="text" placeholder="Your username" value={forgotEmail}
-                                        onChange={e => setForgotEmail(e.target.value)}
-                                        style={inputStyle('forgot')}
-                                        onFocus={() => setFocusedField('forgot')} onBlur={() => setFocusedField('')}
-                                    />
-                                    <button type="submit" style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg,#667eea,#764ba2)', border: 'none', color: 'white', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', marginTop: '16px' }}>
-                                        Send Reset Link
-                                    </button>
-                                </form>
-                            ) : (
-                                <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                                    <div style={{ fontSize: '3rem', marginBottom: '12px' }}>📧</div>
-                                    <p style={{ color: '#4ade80', fontWeight: '600' }}>Reset link sent!</p>
-                                    <p style={{ color: '#64748b', fontSize: '14px' }}>Check your registered email address.</p>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <>
-                            {/* TAB SWITCHER */}
-                            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '4px', marginBottom: '28px', position: 'relative' }}>
-                                <div style={{ position: 'absolute', top: '4px', bottom: '4px', left: formState === 0 ? '4px' : 'calc(50% + 2px)', width: 'calc(50% - 6px)', background: 'linear-gradient(135deg,#667eea,#764ba2)', borderRadius: '9px', transition: 'left 0.3s cubic-bezier(0.4,0,0.2,1)', boxShadow: '0 4px 15px rgba(102,126,234,0.4)' }} />
-                                {['Sign In', 'Sign Up'].map((label, i) => (
-                                    <button key={i} onClick={() => switchForm(i)}
-                                        style={{ flex: 1, padding: '10px', background: 'transparent', border: 'none', color: 'white', fontSize: '14px', fontWeight: '600', cursor: 'pointer', position: 'relative', zIndex: 1, transition: 'color 0.3s' }}>
-                                        {label}
-                                    </button>
-                                ))}
+                            <div style={{ marginBottom: '24px' }}>
+                                <h2 style={{ margin: '0 0 4px', fontSize: '1.35rem', fontWeight: '700', color: 'white' }}>Sign in</h2>
+                                <p style={{ margin: 0, color: '#334155', fontSize: '13px' }}>
+                                    Don't have an account?{' '}
+                                    <button onClick={() => goTo('signup')} style={{ background: 'none', border: 'none', color: '#38bdf8', fontWeight: '700', cursor: 'pointer', fontSize: '13px', padding: 0, fontFamily: 'inherit' }}>Sign up</button>
+                                </p>
                             </div>
 
-                            {/* MESSAGES */}
-                            {error && (
-                                <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', color: '#f87171', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    ⚠️ {error}
-                                </div>
-                            )}
-                            {success && (
-                                <div style={{ background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', color: '#4ade80', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    ✅ {success}
-                                </div>
-                            )}
+                            <Alert type="error" msg={error} />
+                            <Alert type="success" msg={success} />
 
-                            {/* FORM */}
-                            <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                                {formState === 1 && (
-                                    <div>
-                                        <label style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '600', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Full Name</label>
-                                        <input type="text" placeholder="John Doe" value={name} onChange={e => setName(e.target.value)}
-                                            style={inputStyle('name')} onFocus={() => setFocusedField('name')} onBlur={() => setFocusedField('')} required />
-                                    </div>
-                                )}
+                            <form onSubmit={handleSignIn}>
+                                <InputField label="Username" placeholder="your_username" value={siUsername} onChange={e => setSiUsername(e.target.value)} icon="👤" required />
+                                <InputField label="Password" type={siShowPass ? 'text' : 'password'} placeholder="••••••••" value={siPassword} onChange={e => setSiPassword(e.target.value)} icon="🔑" required rightEl={showPassBtn(siShowPass, setSiShowPass)} />
 
-                                <div>
-                                    <label style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '600', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Username</label>
-                                    <input type="text" placeholder="your_username" value={username} onChange={e => setUsername(e.target.value)}
-                                        style={inputStyle('user')} onFocus={() => setFocusedField('user')} onBlur={() => setFocusedField('')} required />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#475569', fontSize: '13px', userSelect: 'none' }}>
+                                        <div onClick={() => setRememberMe(p => !p)} style={{ width: '17px', height: '17px', borderRadius: '5px', border: `2px solid ${rememberMe ? '#38bdf8' : 'rgba(255,255,255,0.15)'}`, background: rememberMe ? '#38bdf8' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', flexShrink: 0, cursor: 'pointer' }}>
+                                            {rememberMe && <span style={{ color: 'white', fontSize: '10px', fontWeight: '800' }}>✓</span>}
+                                        </div>
+                                        Remember me
+                                    </label>
+                                    <button type="button" onClick={() => goTo('forgot')} style={{ background: 'none', border: 'none', color: '#818cf8', fontSize: '13px', cursor: 'pointer', fontWeight: '600', padding: 0, fontFamily: 'inherit' }}>
+                                        Forgot password?
+                                    </button>
                                 </div>
 
-                                <div>
-                                    <label style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '600', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Password</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <input type={showPass ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)}
-                                            style={{ ...inputStyle('pass'), paddingRight: '48px' }}
-                                            onFocus={() => setFocusedField('pass')} onBlur={() => setFocusedField('')} required />
-                                        <button type="button" onClick={() => setShowPass(p => !p)}
-                                            style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: '#64748b' }}>
-                                            {showPass ? '🙈' : '👁️'}
-                                        </button>
-                                    </div>
-                                    {formState === 1 && <PasswordStrength password={password} />}
-                                </div>
-
-                                {/* REMEMBER ME + FORGOT */}
-                                {formState === 0 && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#94a3b8', fontSize: '14px' }}>
-                                            <div onClick={() => setRememberMe(p => !p)} style={{ width: '18px', height: '18px', borderRadius: '5px', border: `2px solid ${rememberMe ? '#667eea' : 'rgba(255,255,255,0.2)'}`, background: rememberMe ? '#667eea' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', flexShrink: 0 }}>
-                                                {rememberMe && <span style={{ color: 'white', fontSize: '11px', fontWeight: '700' }}>✓</span>}
-                                            </div>
-                                            Remember me
-                                        </label>
-                                        <button type="button" onClick={() => setForgotMode(true)}
-                                            style={{ background: 'none', border: 'none', color: '#a78bfa', fontSize: '14px', cursor: 'pointer', fontWeight: '600' }}>
-                                            Forgot password?
-                                        </button>
-                                    </div>
-                                )}
-
-                                {/* SUBMIT */}
-                                <button type="submit" disabled={loading}
-                                    style={{ width: '100%', padding: '15px', background: loading ? 'rgba(102,126,234,0.4)' : 'linear-gradient(135deg,#667eea,#764ba2)', border: 'none', color: 'white', borderRadius: '12px', fontSize: '16px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'opacity 0.2s', boxShadow: '0 8px 24px rgba(102,126,234,0.35)' }}>
-                                    {loading ? (
-                                        <><div style={{ width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Processing...</>
-                                    ) : (
-                                        formState === 0 ? '🚀 Sign In' : '✨ Create Account'
-                                    )}
-                                </button>
+                                <PrimaryBtn type="submit" loading={loading}>🚀 Login</PrimaryBtn>
                             </form>
 
-                            <p style={{ textAlign: 'center', color: '#64748b', fontSize: '13px', margin: '20px 0 0' }}>
-                                {formState === 0 ? "Don't have an account? " : "Already have an account? "}
-                                <button onClick={() => switchForm(formState === 0 ? 1 : 0)} style={{ background: 'none', border: 'none', color: '#a78bfa', fontWeight: '700', cursor: 'pointer', fontSize: '13px' }}>
-                                    {formState === 0 ? 'Sign Up free' : 'Sign In'}
+                            <Divider />
+                            <GoogleBtn onClick={() => setError('Google login coming soon!')} />
+                        </>
+                    )}
+
+                    {/* ── SIGN UP SCREEN ─────────────────────────── */}
+                    {screen === 'signup' && (
+                        <>
+                            <div style={{ marginBottom: '24px' }}>
+                                <h2 style={{ margin: '0 0 4px', fontSize: '1.35rem', fontWeight: '700', color: 'white' }}>Create new account</h2>
+                                <p style={{ margin: 0, color: '#334155', fontSize: '13px' }}>
+                                    Already have an account?{' '}
+                                    <button onClick={() => goTo('signin')} style={{ background: 'none', border: 'none', color: '#38bdf8', fontWeight: '700', cursor: 'pointer', fontSize: '13px', padding: 0, fontFamily: 'inherit' }}>Sign in</button>
+                                </p>
+                            </div>
+
+                            <Alert type="error" msg={error} />
+                            <Alert type="success" msg={success} />
+
+                            <form onSubmit={handleSignUp}>
+                                <InputField label="Full Name" placeholder="John Doe" value={suName} onChange={e => setSuName(e.target.value)} icon="👤" required />
+                                <InputField label="Username" placeholder="john_doe" value={suUsername} onChange={e => setSuUsername(e.target.value)} icon="🪪" required />
+                                <InputField label="Email" type="email" placeholder="you@email.com" value={suEmail} onChange={e => setSuEmail(e.target.value)} icon="📧" required />
+                                <div style={{ marginBottom: '16px' }}>
+                                    <label style={{ display: 'block', color: '#64748b', fontSize: '12px', fontWeight: '600', marginBottom: '7px', letterSpacing: '0.4px', textTransform: 'uppercase' }}>Password</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px', pointerEvents: 'none', opacity: 0.5 }}>🔑</span>
+                                        <input type={suShowPass ? 'text' : 'password'} placeholder="Min. 6 characters" value={suPassword} onChange={e => setSuPassword(e.target.value)} required
+                                            style={{ width: '100%', padding: '13px 48px 13px 42px', background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.09)', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                                        <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }}>{showPassBtn(suShowPass, setSuShowPass)}</div>
+                                    </div>
+                                    <PasswordStrength password={suPassword} />
+                                </div>
+
+                                <PrimaryBtn type="submit" loading={loading}>✨ Sign Up</PrimaryBtn>
+                            </form>
+
+                            <Divider />
+                            <GoogleBtn onClick={() => setError('Google signup coming soon!')} />
+                        </>
+                    )}
+
+                    {/* ── FORGOT PASSWORD SCREEN ────────────────── */}
+                    {screen === 'forgot' && (
+                        <>
+                            <button onClick={() => goTo('signin')} style={{ background: 'none', border: 'none', color: '#818cf8', cursor: 'pointer', fontSize: '13px', fontWeight: '600', padding: 0, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'inherit' }}>
+                                ← Back to Login
+                            </button>
+
+                            <div style={{ marginBottom: '24px' }}>
+                                <div style={{ fontSize: '2.2rem', marginBottom: '10px' }}>🔐</div>
+                                <h2 style={{ margin: '0 0 6px', fontSize: '1.35rem', fontWeight: '700', color: 'white' }}>Forgot Password</h2>
+                                <p style={{ margin: 0, color: '#334155', fontSize: '13px', lineHeight: 1.6 }}>Enter your email to reset your password.</p>
+                            </div>
+
+                            <Alert type="error" msg={error} />
+                            <Alert type="success" msg={success} />
+
+                            <form onSubmit={handleSendOtp}>
+                                <InputField label="Email Address" type="email" placeholder="you@email.com" value={fpEmail} onChange={e => setFpEmail(e.target.value)} icon="📧" required />
+                                <div style={{ height: '4px' }} />
+                                <PrimaryBtn type="submit" loading={loading}>📨 Send OTP</PrimaryBtn>
+                            </form>
+                        </>
+                    )}
+
+                    {/* ── OTP VERIFY + NEW PASSWORD SCREEN ─────── */}
+                    {screen === 'otp' && (
+                        <>
+                            <button onClick={() => goTo('forgot')} style={{ background: 'none', border: 'none', color: '#818cf8', cursor: 'pointer', fontSize: '13px', fontWeight: '600', padding: 0, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'inherit' }}>
+                                ← Back
+                            </button>
+
+                            <div style={{ marginBottom: '24px' }}>
+                                <div style={{ fontSize: '2.2rem', marginBottom: '10px' }}>📬</div>
+                                <h2 style={{ margin: '0 0 6px', fontSize: '1.35rem', fontWeight: '700', color: 'white' }}>Check your email</h2>
+                                <p style={{ margin: 0, color: '#334155', fontSize: '13px', lineHeight: 1.6 }}>
+                                    OTP sent to <strong style={{ color: '#38bdf8' }}>{fpEmail}</strong>.<br />Expires in 10 minutes.
+                                </p>
+                            </div>
+
+                            <Alert type="error" msg={error} />
+                            <Alert type="success" msg={success} />
+
+                            <form onSubmit={handleResetPassword}>
+                                <div style={{ marginBottom: '16px' }}>
+                                    <label style={{ display: 'block', color: '#64748b', fontSize: '12px', fontWeight: '600', marginBottom: '7px', letterSpacing: '0.4px', textTransform: 'uppercase' }}>Enter OTP</label>
+                                    <input
+                                        type="text"
+                                        placeholder="6-digit OTP"
+                                        value={fpOtp}
+                                        onChange={e => setFpOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                        maxLength={6}
+                                        required
+                                        style={{ width: '100%', padding: '14px', background: 'rgba(56,189,248,0.05)', border: '1.5px solid rgba(56,189,248,0.25)', borderRadius: '12px', color: '#38bdf8', fontSize: '22px', fontWeight: '800', letterSpacing: '10px', textAlign: 'center', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }}
+                                    />
+                                </div>
+
+                                <div style={{ marginBottom: '16px' }}>
+                                    <label style={{ display: 'block', color: '#64748b', fontSize: '12px', fontWeight: '600', marginBottom: '7px', letterSpacing: '0.4px', textTransform: 'uppercase' }}>New Password</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px', pointerEvents: 'none', opacity: 0.5 }}>🔑</span>
+                                        <input type={fpShowPass ? 'text' : 'password'} placeholder="New password" value={fpNewPass} onChange={e => setFpNewPass(e.target.value)} required
+                                            style={{ width: '100%', padding: '13px 48px 13px 42px', background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.09)', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                                        <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }}>{showPassBtn(fpShowPass, setFpShowPass)}</div>
+                                    </div>
+                                    <PasswordStrength password={fpNewPass} />
+                                </div>
+
+                                <PrimaryBtn type="submit" loading={loading}>🔓 Reset Password</PrimaryBtn>
+                            </form>
+
+                            <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                                <button onClick={handleSendOtp} style={{ background: 'none', border: 'none', color: '#475569', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                    Didn't receive? <span style={{ color: '#818cf8', fontWeight: '600' }}>Resend OTP</span>
                                 </button>
-                            </p>
+                            </div>
                         </>
                     )}
                 </div>
             </div>
 
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-                @keyframes orbFloat { from{transform:translate(0,0) scale(1)} to{transform:translate(30px,20px) scale(1.05)} }
-                @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
-                @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }
+                @keyframes orbFloat { from{transform:translate(0,0) scale(1)} to{transform:translate(25px,18px) scale(1.04)} }
+                @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+                @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-7px)} 40%,80%{transform:translateX(7px)} }
                 @keyframes spin { to{transform:rotate(360deg)} }
-                input::placeholder { color: #475569; }
+                input::placeholder { color: #1e293b; }
             `}</style>
         </div>
     );
