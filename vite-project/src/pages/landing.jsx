@@ -9,6 +9,7 @@ export default function LandingPage() {
     const [statsVisible, setStatsVisible] = useState(false);
     const statsRef = useRef(null);
     const [activeModal, setActiveModal] = useState(null);
+    const [counts, setCounts] = useState({ meetings: 0, users: 0, uptime: 0 });
 
     useEffect(() => {
         const handleMouse = e => setMousePos({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight });
