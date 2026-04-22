@@ -565,15 +565,61 @@ export default function VideoMeetComponent() {
             <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}} @keyframes bounce{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}`}</style>
         </div>
     );
+    // Pre-join toggle handlers (before entering meeting)
+    const handlePreviewVideo = () => {
+        const track = window.localStream?.getVideoTracks()[0];
+        if (track) { track.enabled = !track.enabled; setVideo(track.enabled); }
+    };
+    const handlePreviewAudio = () => {
+        const track = window.localStream?.getAudioTracks()[0];
+        if (track) { track.enabled = !track.enabled; setAudio(track.enabled); }
+    };
+
     if (askForUsername) return (
-        <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#0f0f1a,#1a1a2e)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', gap: '24px', padding: '20px' }}>
+        <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#0f0f1a,#1a1a2e)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', gap: '20px', padding: '20px' }}>
             <div style={{ fontSize: '3rem' }}>📡</div>
             <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: '700' }}>Join Meeting</h2>
             <p style={{ margin: 0, color: '#94a3b8' }}>Code: <strong style={{ color: '#a78bfa' }}>{meetingCode}</strong></p>
-            <video ref={localVideoCallback} autoPlay muted playsInline style={{ width: '340px', maxWidth: '90vw', borderRadius: '16px', background: '#1a1a2e', border: '1px solid rgba(102,126,234,0.3)' }} />
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-                <input type="text" placeholder="Your display name" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={e => e.key === 'Enter' && username.trim() && connect()} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(102,126,234,0.4)', color: 'white', padding: '14px 18px', borderRadius: '10px', fontSize: '15px', outline: 'none', width: '220px' }} />
-                <button onClick={connect} disabled={!username.trim()} style={{ background: username.trim() ? 'linear-gradient(135deg,#667eea,#764ba2)' : '#333', border: 'none', color: 'white', padding: '14px 28px', borderRadius: '10px', fontSize: '15px', fontWeight: '700', cursor: username.trim() ? 'pointer' : 'not-allowed' }}>Join Now →</button>
+
+            {/* Camera preview */}
+            <div style={{ position: 'relative', width: '340px', maxWidth: '90vw' }}>
+                <video ref={localVideoCallback} autoPlay muted playsInline style={{ width: '100%', borderRadius: '16px', background: '#1a1a2e', border: '1px solid rgba(102,126,234,0.3)', display: 'block' }} />
+                {/* Overlay when camera is off */}
+                {!video && (
+                    <div style={{ position: 'absolute', inset: 0, background: '#111122', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '8px', border: '1px solid rgba(102,126,234,0.2)' }}>
+                        <span style={{ fontSize: '2.5rem' }}>📷</span>
+                        <span style={{ color: '#64748b', fontSize: '13px' }}>Camera is off</span>
+                    </div>
+                )}
+                {/* Status badges */}
+                <div style={{ position: 'absolute', bottom: '10px', left: '10px', display: 'flex', gap: '6px' }}>
+                    <div style={{ background: video ? 'rgba(74,222,128,0.25)' : 'rgba(239,68,68,0.35)', border: `1px solid ${video ? 'rgba(74,222,128,0.5)' : 'rgba(239,68,68,0.6)'}`, borderRadius: '6px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px', backdropFilter: 'blur(6px)' }}>
+                        <span style={{ fontSize: '11px' }}>{video ? '📹' : '📷'}</span>
+                        <span style={{ fontSize: '11px', color: video ? '#4ade80' : '#f87171', fontWeight: '600' }}>{video ? 'ON' : 'OFF'}</span>
+                    </div>
+                    <div style={{ background: audio ? 'rgba(74,222,128,0.25)' : 'rgba(239,68,68,0.35)', border: `1px solid ${audio ? 'rgba(74,222,128,0.5)' : 'rgba(239,68,68,0.6)'}`, borderRadius: '6px', padding: '3px 8px', display: 'flex', alignItems: 'center', gap: '4px', backdropFilter: 'blur(6px)' }}>
+                        <span style={{ fontSize: '11px' }}>{audio ? '🎤' : '🔇'}</span>
+                        <span style={{ fontSize: '11px', color: audio ? '#4ade80' : '#f87171', fontWeight: '600' }}>{audio ? 'ON' : 'OFF'}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Camera / Mic toggle buttons */}
+            <div style={{ display: 'flex', gap: '12px' }}>
+                <button onClick={handlePreviewVideo}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '10px', border: `1px solid ${video ? 'rgba(74,222,128,0.4)' : 'rgba(239,68,68,0.4)'}`, background: video ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)', color: video ? '#4ade80' : '#f87171', cursor: 'pointer', fontSize: '14px', fontWeight: '600', transition: 'all 0.2s' }}>
+                    {video ? '📹' : '📷'} {video ? 'Camera On' : 'Camera Off'}
+                </button>
+                <button onClick={handlePreviewAudio}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '10px', border: `1px solid ${audio ? 'rgba(74,222,128,0.4)' : 'rgba(239,68,68,0.4)'}`, background: audio ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)', color: audio ? '#4ade80' : '#f87171', cursor: 'pointer', fontSize: '14px', fontWeight: '600', transition: 'all 0.2s' }}>
+                    {audio ? '🎤' : '🔇'} {audio ? 'Mic On' : 'Mic Off'}
+                </button>
+            </div>
+
+            {/* Name input + join */}
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', width: '100%', maxWidth: '420px' }}>
+                <input type="text" placeholder="Your display name" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={e => e.key === 'Enter' && username.trim() && connect()} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(102,126,234,0.4)', color: 'white', padding: '14px 18px', borderRadius: '10px', fontSize: '15px', outline: 'none', flex: '1', minWidth: '180px' }} />
+                <button onClick={connect} disabled={!username.trim()} style={{ background: username.trim() ? 'linear-gradient(135deg,#667eea,#764ba2)' : '#333', border: 'none', color: 'white', padding: '14px 24px', borderRadius: '10px', fontSize: '15px', fontWeight: '700', cursor: username.trim() ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}>Join Now →</button>
             </div>
         </div>
     );
@@ -611,6 +657,30 @@ export default function VideoMeetComponent() {
             )}
 
             {isHost && <div style={{ position: 'absolute', top: '16px', left: showAI ? '332px' : '16px', zIndex: 20, background: 'rgba(102,126,234,0.25)', border: '1px solid rgba(102,126,234,0.4)', borderRadius: '20px', padding: '5px 14px', color: '#a78bfa', fontSize: '12px', fontWeight: '700', transition: 'left 0.3s', pointerEvents: 'none' }}>👑 Host</div>}
+
+            {/* ── YOU DASHBOARD ── */}
+            <div style={{ position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)', zIndex: 20, background: 'rgba(10,10,20,0.85)', border: '1px solid rgba(102,126,234,0.3)', borderRadius: '40px', padding: '6px 14px', display: 'flex', alignItems: 'center', gap: '8px', backdropFilter: 'blur(16px)', boxShadow: '0 4px 20px rgba(0,0,0,0.5)', pointerEvents: 'none', maxWidth: 'calc(100vw - 120px)', overflow: 'hidden' }}>
+                <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: isHost ? 'linear-gradient(135deg,#f59e0b,#ef4444)' : 'linear-gradient(135deg,#667eea,#764ba2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '11px', color: 'white', flexShrink: 0 }}>{(username || 'Y')[0].toUpperCase()}</div>
+                <span style={{ color: 'white', fontWeight: '700', fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '90px' }}>{username || 'You'}</span>
+                {isHost && <span style={{ background: 'rgba(245,158,11,0.2)', border: '1px solid rgba(245,158,11,0.4)', color: '#fbbf24', fontSize: '10px', fontWeight: '700', padding: '1px 6px', borderRadius: '20px', flexShrink: 0 }}>👑 Host</span>}
+                <span style={{ color: 'rgba(255,255,255,0.12)', fontSize: '14px' }}>|</span>
+                <span style={{ fontSize: '11px', color: video ? '#4ade80' : '#f87171', fontWeight: '700', flexShrink: 0 }}>{video ? '📹 On' : '📷 Off'}</span>
+                <span style={{ fontSize: '11px', color: audio ? '#4ade80' : '#f87171', fontWeight: '700', flexShrink: 0 }}>{audio ? '🎤 On' : '🔇 Off'}</span>
+                <span style={{ color: 'rgba(255,255,255,0.12)', fontSize: '14px' }}>|</span>
+                <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', flexShrink: 0 }}>👥 {totalParticipants}</span>
+            </div>
+
+            {/* ── YOU DASHBOARD ── */}
+            <div style={{ position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)', zIndex: 20, background: 'rgba(10,10,20,0.85)', border: '1px solid rgba(102,126,234,0.3)', borderRadius: '40px', padding: '6px 16px', display: 'flex', alignItems: 'center', gap: '10px', backdropFilter: 'blur(16px)', boxShadow: '0 4px 20px rgba(0,0,0,0.5)', pointerEvents: 'none', maxWidth: 'calc(100vw - 120px)', overflow: 'hidden' }}>
+                <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: isHost ? 'linear-gradient(135deg,#f59e0b,#ef4444)' : 'linear-gradient(135deg,#667eea,#764ba2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '11px', color: 'white', flexShrink: 0 }}>{(username || 'Y')[0].toUpperCase()}</div>
+                <span style={{ color: 'white', fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>{username || 'You'}</span>
+                {isHost && <span style={{ background: 'rgba(245,158,11,0.2)', border: '1px solid rgba(245,158,11,0.4)', color: '#fbbf24', fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '20px', flexShrink: 0 }}>👑 Host</span>}
+                <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '16px' }}>|</span>
+                <span style={{ fontSize: '11px', color: video ? '#4ade80' : '#f87171', fontWeight: '700', flexShrink: 0 }}>{video ? '📹 On' : '📷 Off'}</span>
+                <span style={{ fontSize: '11px', color: audio ? '#4ade80' : '#f87171', fontWeight: '700', flexShrink: 0 }}>{audio ? '🎤 On' : '🔇 Off'}</span>
+                <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '16px' }}>|</span>
+                <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', flexShrink: 0 }}>👥 {totalParticipants}</span>
+            </div>
 
             {/* VIDEO GRID */}
             <div className={`${styles.conferenceView} ${getGridClass(totalParticipants)}`}>
@@ -708,11 +778,11 @@ export default function VideoMeetComponent() {
 
             {/* CONTROL BAR */}
             <div className={styles.buttonContainers}>
-                <button onClick={() => setShowAI(p => !p)} title="AI Meeting Assistant" style={{ background: showAI ? 'linear-gradient(135deg,#667eea,#764ba2)' : 'rgba(102,126,234,0.15)', border: `1px solid ${showAI ? '#667eea' : 'rgba(102,126,234,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>🤖 AI</button>
-                <button onClick={() => setShowPollPanel(p => !p)} title="Live Polls" style={{ background: showPollPanel ? 'linear-gradient(135deg,#f59e0b,#ef4444)' : 'rgba(245,158,11,0.15)', border: `1px solid ${showPollPanel ? '#f59e0b' : 'rgba(245,158,11,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap', position: 'relative' }}>🗳️ Poll{polls.filter(p => !p.ended).length > 0 && <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: 'white', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' }}>{polls.filter(p => !p.ended).length}</span>}</button>
-                <button onClick={generateMeetingScore} title="AI Meeting Score" style={{ background: showScorePanel ? 'linear-gradient(135deg,#06b6d4,#667eea)' : 'rgba(6,182,212,0.15)', border: `1px solid ${showScorePanel ? '#06b6d4' : 'rgba(6,182,212,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>📊 Score</button>
+                <button onClick={() => setShowAI(p => !p)} title="AI Meeting Assistant" style={{ background: showAI ? 'linear-gradient(135deg,#667eea,#764ba2)' : 'rgba(102,126,234,0.15)', border: `1px solid ${showAI ? '#667eea' : 'rgba(102,126,234,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>🤖 <span className={styles.btnLabel}>AI</span></button>
+                <button onClick={() => setShowPollPanel(p => !p)} title="Live Polls" style={{ background: showPollPanel ? 'linear-gradient(135deg,#f59e0b,#ef4444)' : 'rgba(245,158,11,0.15)', border: `1px solid ${showPollPanel ? '#f59e0b' : 'rgba(245,158,11,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap', position: 'relative' }}>🗳️ <span className={styles.btnLabel}>Poll</span>{polls.filter(p => !p.ended).length > 0 && <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: 'white', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' }}>{polls.filter(p => !p.ended).length}</span>}</button>
+                <button onClick={generateMeetingScore} title="AI Meeting Score" style={{ background: showScorePanel ? 'linear-gradient(135deg,#06b6d4,#667eea)' : 'rgba(6,182,212,0.15)', border: `1px solid ${showScorePanel ? '#06b6d4' : 'rgba(6,182,212,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>📊 <span className={styles.btnLabel}>Score</span></button>
                 {/* PARTICIPANTS BUTTON */}
-                <button onClick={() => setShowParticipants(p => !p)} title="Participants" style={{ background: showParticipants ? 'linear-gradient(135deg,#06b6d4,#0284c7)' : 'rgba(6,182,212,0.15)', border: `1px solid ${showParticipants ? '#06b6d4' : 'rgba(6,182,212,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap', position: 'relative' }}>
+                <button onClick={() => setShowParticipants(p => !p)} title="Participants" style={{ background: showParticipants ? 'linear-gradient(135deg,#06b6d4,#0284c7)' : 'rgba(6,182,212,0.15)', border: `1px solid ${showParticipants ? '#06b6d4' : 'rgba(6,182,212,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap', position: 'relative' }}>
                     👥 {totalParticipants}
                     {isHost && <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#fbbf24', color: '#000', borderRadius: '50%', width: '14px', height: '14px', fontSize: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900' }}>👑</span>}
                 </button>
