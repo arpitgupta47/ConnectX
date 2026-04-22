@@ -206,4 +206,25 @@ const addToHistory = async (req, res) => {
     }
 };
 
-export { login, register, getUserHistory, addToHistory, sendOtp, resetPassword, googleAuth };
+
+// ── GET PROFILE ───────────────────────────────────────────────────
+const getProfile = async (req, res) => {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token)
+        return res.status(401).json({ message: "No token provided" });
+    try {
+        const user = await User.findOne({ token });
+        if (!user)
+            return res.status(404).json({ message: "User not found" });
+        return res.status(200).json({
+            name: user.name,
+            username: user.username,
+            email: user.email,
+            avatar: user.avatar || null,
+        });
+    } catch (e) {
+        return res.status(500).json({ message: `Something went wrong: ${e}` });
+    }
+};
+
+export { login, register, getUserHistory, addToHistory, sendOtp, resetPassword, googleAuth, getProfile };
