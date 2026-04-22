@@ -1,6 +1,6 @@
 import axios from "axios";
 import httpStatus from "http-status";
-import { createContext, useState } from "react";
+import { createContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import server from "../environment";
 import { signInWithGoogle } from "../firebase";
@@ -40,6 +40,28 @@ export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const navigate = useNavigate();
 
+  // Auto-fetch profile on mount if token exists
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token && !userData) {
+      fetchProfile().catch(() => {});
+    }
+  }, []);
+
+  // FETCH PROFILE
+  const fetchProfile = async () => {
+    try {
+      const res = await client.get("/get_profile");
+      if (res.status === 200) {
+        setUserData(res.data);
+        return res.data;
+      }
+    } catch (err) {
+      console.log("Profile fetch failed:", err);
+    }
+    return null;
+  };
+
   // REGISTER
   const handleRegister = async (name, username, password, email) => {
     try {
@@ -57,6 +79,7 @@ export const AuthProvider = ({ children }) => {
       const res = await client.post("/login", { username, password });
       if (res.status === httpStatus.OK) {
         localStorage.setItem("token", res.data.token);
+        await fetchProfile();
         return res.data.message || "Login successful";
       }
       throw new Error(res.data?.message || "Login failed");
@@ -70,23 +93,28 @@ export const AuthProvider = ({ children }) => {
     try {
       const result = await signInWithGoogle();
       const user = result.user;
-
-      // Backend pe Google user register/login karo
       const res = await client.post("/google-auth", {
         name: user.displayName,
         email: user.email,
         googleId: user.uid,
         avatar: user.photoURL,
       });
-
       if (res.status === httpStatus.OK || res.status === httpStatus.CREATED) {
         localStorage.setItem("token", res.data.token);
+        await fetchProfile();
         return res.data.message || "Google login successful";
       }
       throw new Error(res.data?.message || "Google login failed");
     } catch (err) {
       throw err;
     }
+  };
+
+  // LOGOUT
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setUserData(null);
+    navigate("/auth");
   };
 
   // HISTORY
@@ -114,9 +142,11 @@ export const AuthProvider = ({ children }) => {
       value={{
         userData,
         setUserData,
+        fetchProfile,
         handleRegister,
         handleLogin,
         handleGoogleLogin,
+        handleLogout,
         getHistoryOfUser,
         addToUserHistory,
       }}
