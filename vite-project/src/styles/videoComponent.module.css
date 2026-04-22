@@ -171,13 +171,58 @@
 
 /* ── MOBILE ─────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+    .meetVideoContainer {
+        padding-bottom: 0;
+    }
     .count1 {
         grid-template-columns: minmax(0, 100%);
-        grid-template-rows: minmax(0, 260px);
+        grid-template-rows: minmax(0, 220px);
     }
     .count2, .count3 { grid-template-columns: 1fr; }
     .count5, .countMany { grid-template-columns: 1fr 1fr; }
-    .chatRoom { width: 100%; border-left: none; border-top: 1px solid rgba(102,126,234,0.2); }
-    .buttonContainers { gap: 4px; }
-    .buttonContainers svg { font-size: 1.3rem; }
+    .chatRoom { width: 100%; border-left: none; border-top: 1px solid rgba(102,126,234,0.2); top: auto; height: 55vh; }
+    .buttonContainers {
+        height: auto;
+        min-height: 60px;
+        padding: 8px 6px 10px;
+        gap: 4px;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        overflow: visible;
+    }
+    .buttonContainers svg { font-size: 1.2rem; }
+    .buttonContainers button {
+        font-size: 11px !important;
+        padding: 6px 8px !important;
+    }
+    .conferenceView {
+        padding-bottom: 100px;
+    }
+}
+
+@media (max-width: 480px) {
+    .buttonContainers {
+        gap: 3px;
+        padding: 6px 4px 10px;
+    }
+    .buttonContainers button {
+        font-size: 10px !important;
+        padding: 5px 6px !important;
+        border-radius: 8px !important;
+    }
+    .conferenceView {
+        padding-bottom: 110px;
+    }
+}
+
+/* ── BUTTON LABEL — hide text on tiny screens ─────────────────── */
+.btnLabel {
+    display: inline;
+}
+
+@media (max-width: 400px) {
+    .btnLabel {
+        display: none;
+    }
 }
