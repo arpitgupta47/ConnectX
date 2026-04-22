@@ -3,12 +3,13 @@ import httpStatus from "http-status";
 import { createContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import server from "../environment";
+import { signInWithGoogle } from "../firebase";
 
 export const AuthContext = createContext({});
 
 const client = axios.create({
   baseURL: `${server}/api/v1/users`,
-  timeout: 30000,  // 30s - render.com free tier cold start leta hai ~15-20s
+  timeout: 30000,
   withCredentials: true
 });
 
@@ -40,18 +41,10 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
 
   // REGISTER
-  const handleRegister = async (name, username, password) => {
+  const handleRegister = async (name, username, password, email) => {
     try {
-      const res = await client.post("/register", {
-        name,
-        username,
-        password,
-      });
-
-      if (res.status === httpStatus.CREATED) {
-        return res.data.message;
-      }
-
+      const res = await client.post("/register", { name, username, password, email });
+      if (res.status === httpStatus.CREATED) return res.data.message;
       throw new Error(res.data?.message || "Register failed");
     } catch (err) {
       throw err;
@@ -61,17 +54,36 @@ export const AuthProvider = ({ children }) => {
   // LOGIN
   const handleLogin = async (username, password) => {
     try {
-      const res = await client.post("/login", {
-        username,
-        password,
-      });
-
+      const res = await client.post("/login", { username, password });
       if (res.status === httpStatus.OK) {
         localStorage.setItem("token", res.data.token);
         return res.data.message || "Login successful";
       }
-
       throw new Error(res.data?.message || "Login failed");
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  // GOOGLE LOGIN
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithGoogle();
+      const user = result.user;
+
+      // Backend pe Google user register/login karo
+      const res = await client.post("/google-auth", {
+        name: user.displayName,
+        email: user.email,
+        googleId: user.uid,
+        avatar: user.photoURL,
+      });
+
+      if (res.status === httpStatus.OK || res.status === httpStatus.CREATED) {
+        localStorage.setItem("token", res.data.token);
+        return res.data.message || "Google login successful";
+      }
+      throw new Error(res.data?.message || "Google login failed");
     } catch (err) {
       throw err;
     }
@@ -90,9 +102,7 @@ export const AuthProvider = ({ children }) => {
   // ADD HISTORY
   const addToUserHistory = async (meetingCode) => {
     try {
-      const res = await client.post("/add_to_activity", {
-        meeting_code: meetingCode,
-      });
+      const res = await client.post("/add_to_activity", { meeting_code: meetingCode });
       return res.data;
     } catch (err) {
       throw err;
@@ -106,6 +116,7 @@ export const AuthProvider = ({ children }) => {
         setUserData,
         handleRegister,
         handleLogin,
+        handleGoogleLogin,
         getHistoryOfUser,
         addToUserHistory,
       }}
