@@ -433,7 +433,39 @@ export default function VideoMeetComponent() {
         if (fromId === socketIdRef.current) return;
 
         if (signal.sdp) {
-            connections[fromId]?.setRemoteDescription(new RTCSessionDescription(signal.sdp))
+            // Agar connection exist nahi karta (race condition) toh banao
+            if (!connections[fromId]) {
+                const pc = new RTCPeerConnection(peerConfig);
+                connections[fromId] = pc;
+
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        socketRef.current.emit('signal', fromId, JSON.stringify({ ice: event.candidate }));
+                    }
+                };
+
+                pc.ontrack = (event) => {
+                    const remoteStream = event.streams[0];
+                    if (!remoteStream) return;
+                    setVideos(prev => {
+                        const exists = prev.find(v => v.socketId === fromId);
+                        const name = participantNames.current[fromId] || "Participant";
+                        if (exists) {
+                            return prev.map(v =>
+                                v.socketId === fromId ? { ...v, stream: remoteStream, name } : v
+                            );
+                        }
+                        return [...prev, { socketId: fromId, stream: remoteStream, name }];
+                    });
+                };
+
+                // Local tracks add karo
+                const streamToSend = window.localStream || createSilentBlackStream();
+                if (!window.localStream) window.localStream = streamToSend;
+                streamToSend.getTracks().forEach(track => pc.addTrack(track, streamToSend));
+            }
+
+            connections[fromId].setRemoteDescription(new RTCSessionDescription(signal.sdp))
                 .then(() => {
                     if (signal.sdp.type === 'offer') {
                         connections[fromId].createAnswer()
@@ -606,70 +638,108 @@ Give a JSON response ONLY (no markdown) with this exact structure:
                 }
                 setAdmitRequests(prev => prev.filter(r => r.socketId !== id));
 
-                // Har client ke saath peer connection banao (self ko skip karo)
-                clients.forEach(clientId => {
-                    if (clientId === socketIdRef.current) return; // self skip
-                    if (connections[clientId]) return; // already exists skip
+                // ── FIXED LOGIC ──
+                // Sirf naye user ko existing members ke saath connections banana chahiye
+                // Existing members sirf naye user ke saath connection banayenge
+                // "Offerer" = naya joined user (id === socketIdRef.current)
+                // "Answerer" = existing users (id !== socketIdRef.current)
 
-                    // ── Naya RTCPeerConnection banao ──
-                    const pc = new RTCPeerConnection(peerConfig);
-                    connections[clientId] = pc;
+                const iAmNewUser = (id === socketIdRef.current);
+                const newUserId = id;
 
-                    // ICE candidates socket se bhejo
-                    pc.onicecandidate = (event) => {
-                        if (event.candidate) {
-                            socketRef.current.emit('signal', clientId, JSON.stringify({ ice: event.candidate }));
-                        }
-                    };
-
-                    // FIX: ontrack — remote video stream milne pe videos state update karo
-                    pc.ontrack = (event) => {
-                        const remoteStream = event.streams[0];
-                        if (!remoteStream) return;
-
-                        setVideos(prev => {
-                            const exists = prev.find(v => v.socketId === clientId);
-                            const name = participantNames.current[clientId] || "Participant";
-
-                            if (exists) {
-                                // Stream update karo (replaceTrack ke baad naya stream aa sakta hai)
-                                return prev.map(v =>
-                                    v.socketId === clientId ? { ...v, stream: remoteStream, name } : v
-                                );
-                            }
-                            // Naya participant add karo
-                            return [...prev, { socketId: clientId, stream: remoteStream, name }];
-                        });
-                    };
-
-                    // FIX: Connection state monitor karo — disconnected pe cleanup
-                    pc.onconnectionstatechange = () => {
-                        if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-                            console.log(`Peer ${clientId} connection ${pc.connectionState}`);
-                        }
-                    };
-
-                    // Local stream ki tracks add karo
-                    const streamToSend = window.localStream || createSilentBlackStream();
-                    if (!window.localStream) window.localStream = streamToSend;
-
-                    streamToSend.getTracks().forEach(track => {
-                        pc.addTrack(track, streamToSend);
-                    });
-                });
-
-                // FIX: Agar main naya join kiya hoon toh sabhi existing members ko offer bhejo
-                if (id === socketIdRef.current) {
+                if (iAmNewUser) {
+                    // Main naya join kiya hoon — sabhi existing members ke saath connection banao
+                    // Aur unhe offer bhejo (main initiator hoon)
                     clients.forEach(clientId => {
-                        if (clientId === socketIdRef.current) return;
-                        const pc = connections[clientId];
-                        if (!pc) return;
+                        if (clientId === socketIdRef.current) return; // self skip
 
+                        // Agar connection already hai toh skip
+                        if (connections[clientId]) return;
+
+                        const pc = new RTCPeerConnection(peerConfig);
+                        connections[clientId] = pc;
+
+                        pc.onicecandidate = (event) => {
+                            if (event.candidate) {
+                                socketRef.current.emit('signal', clientId, JSON.stringify({ ice: event.candidate }));
+                            }
+                        };
+
+                        pc.ontrack = (event) => {
+                            const remoteStream = event.streams[0];
+                            if (!remoteStream) return;
+                            setVideos(prev => {
+                                const exists = prev.find(v => v.socketId === clientId);
+                                const name = participantNames.current[clientId] || "Participant";
+                                if (exists) {
+                                    return prev.map(v =>
+                                        v.socketId === clientId ? { ...v, stream: remoteStream, name } : v
+                                    );
+                                }
+                                return [...prev, { socketId: clientId, stream: remoteStream, name }];
+                            });
+                        };
+
+                        pc.onconnectionstatechange = () => {
+                            if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+                                console.log(`Peer ${clientId} connection ${pc.connectionState}`);
+                            }
+                        };
+
+                        // Local stream tracks add karo
+                        const streamToSend = window.localStream || createSilentBlackStream();
+                        if (!window.localStream) window.localStream = streamToSend;
+                        streamToSend.getTracks().forEach(track => pc.addTrack(track, streamToSend));
+
+                        // Main offer bhejta hoon (naya user = initiator)
                         pc.createOffer()
                             .then(d => pc.setLocalDescription(d))
                             .then(() => socketRef.current.emit('signal', clientId, JSON.stringify({ sdp: pc.localDescription })))
                             .catch(e => console.log("createOffer error:", e));
                     });
+
+                } else {
+                    // Koi aur naya join kiya — sirf us naye user ke saath connection banao
+                    // Main answerer hoon, offer aane ka wait karunga (gotMessageFromServer handle karega)
+                    if (connections[newUserId]) return; // already exists skip
+
+                    const pc = new RTCPeerConnection(peerConfig);
+                    connections[newUserId] = pc;
+
+                    pc.onicecandidate = (event) => {
+                        if (event.candidate) {
+                            socketRef.current.emit('signal', newUserId, JSON.stringify({ ice: event.candidate }));
+                        }
+                    };
+
+                    pc.ontrack = (event) => {
+                        const remoteStream = event.streams[0];
+                        if (!remoteStream) return;
+                        setVideos(prev => {
+                            const exists = prev.find(v => v.socketId === newUserId);
+                            const name = participantNames.current[newUserId] || "Participant";
+                            if (exists) {
+                                return prev.map(v =>
+                                    v.socketId === newUserId ? { ...v, stream: remoteStream, name } : v
+                                );
+                            }
+                            return [...prev, { socketId: newUserId, stream: remoteStream, name }];
+                        });
+                    };
+
+                    pc.onconnectionstatechange = () => {
+                        if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+                            console.log(`Peer ${newUserId} connection ${pc.connectionState}`);
+                        }
+                    };
+
+                    // Local stream tracks add karo (taaki naya user meri video dekh sake)
+                    const streamToSend = window.localStream || createSilentBlackStream();
+                    if (!window.localStream) window.localStream = streamToSend;
+                    streamToSend.getTracks().forEach(track => pc.addTrack(track, streamToSend));
+
+                    // Main offer NAHI bhejta — naya user bhejega, main answer karunga
+                    // gotMessageFromServer mein offer receive hoga aur answer bhejega
                 }
             });
         });
