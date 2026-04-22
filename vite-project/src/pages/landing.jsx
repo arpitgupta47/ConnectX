@@ -375,7 +375,6 @@ export default function LandingPage() {
                                 ))}
                             </div>
                             <button
-                                onClick={() => navigate('/auth')}
                                 style={{ width: '100%', padding: '12px', borderRadius: '12px', background: p.highlight ? 'linear-gradient(135deg,#818cf8,#38bdf8)' : 'transparent', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit', border: p.highlight ? 'none' : `1px solid ${p.color}60` }}
                                 onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; }}
                                 onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
