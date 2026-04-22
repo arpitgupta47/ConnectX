@@ -311,10 +311,10 @@ export default function LandingPage() {
                         </div>
                         <div style={{ padding: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                             {[
-                                { name: 'Arpit (Host) 👑', color: 'rgba(56,189,248,0.15)', border: 'rgba(56,189,248,0.3)', active: true },
-                                { name: 'Anmol', color: 'rgba(129,140,248,0.12)', border: 'rgba(129,140,248,0.2)', active: false },
-                                { name: 'Priya', color: 'rgba(244,114,182,0.1)', border: 'rgba(244,114,182,0.2)', active: false },
-                                { name: 'Rahul', color: 'rgba(52,211,153,0.1)', border: 'rgba(52,211,153,0.2)', active: false },
+                                { name: 'Participant 1(Host) 👑', color: 'rgba(56,189,248,0.15)', border: 'rgba(56,189,248,0.3)', active: true },
+                                { name: 'Participant 2', color: 'rgba(129,140,248,0.12)', border: 'rgba(129,140,248,0.2)', active: false },
+                                { name: 'Participant 3', color: 'rgba(244,114,182,0.1)', border: 'rgba(244,114,182,0.2)', active: false },
+                                { name: 'Participant 4', color: 'rgba(52,211,153,0.1)', border: 'rgba(52,211,153,0.2)', active: false },
                             ].map((p, i) => (
                                 <div key={i} style={{ background: p.color, border: `1px solid ${p.border}`, borderRadius: '12px', height: isMobile ? '80px' : '120px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px', position: 'relative', overflow: 'hidden' }}>
                                     <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: `linear-gradient(135deg, ${p.border}, transparent)`, border: `2px solid ${p.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700', color: 'white' }}>
