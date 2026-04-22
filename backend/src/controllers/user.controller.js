@@ -9,8 +9,8 @@ import nodemailer from "nodemailer";
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-        user: process.env.EMAIL_USER,   // your gmail
-        pass: process.env.EMAIL_PASS,   // gmail app password
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
     },
 });
 
@@ -58,6 +58,39 @@ const register = async (req, res) => {
     }
 };
 
+// ── GOOGLE AUTH ───────────────────────────────────────────────────
+const googleAuth = async (req, res) => {
+    const { name, email, googleId, avatar } = req.body;
+    if (!email || !googleId)
+        return res.status(400).json({ message: "Email and Google ID are required" });
+    try {
+        let user = await User.findOne({ email });
+        if (user) {
+            // Existing user — just log them in
+            const token = crypto.randomBytes(20).toString("hex");
+            user.token = token;
+            await user.save();
+            return res.status(httpStatus.OK).json({ token, message: "Google login successful" });
+        }
+        // New user — auto-register
+        const username = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "") + "_" + Math.floor(1000 + Math.random() * 9000);
+        const token = crypto.randomBytes(20).toString("hex");
+        const newUser = new User({
+            name: name || username,
+            username,
+            email,
+            googleId,
+            avatar,
+            token,
+            password: await bcrypt.hash(googleId + (process.env.JWT_SECRET || "secret"), 10),
+        });
+        await newUser.save();
+        return res.status(httpStatus.CREATED).json({ token, message: "Google account registered & logged in" });
+    } catch (e) {
+        return res.status(500).json({ message: `Something went wrong: ${e}` });
+    }
+};
+
 // ── SEND OTP ──────────────────────────────────────────────────────
 const sendOtp = async (req, res) => {
     const { email } = req.body;
@@ -68,15 +101,13 @@ const sendOtp = async (req, res) => {
         if (!user)
             return res.status(404).json({ message: "No account found with this email" });
 
-        // Generate 6-digit OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
         user.otp = otp;
         user.otpExpiry = otpExpiry;
         await user.save();
 
-        // Send email
         await transporter.sendMail({
             from: `"ConnectX" <${process.env.EMAIL_USER}>`,
             to: email,
@@ -175,4 +206,4 @@ const addToHistory = async (req, res) => {
     }
 };
 
-export { login, register, getUserHistory, addToHistory, sendOtp, resetPassword };
+export { login, register, getUserHistory, addToHistory, sendOtp, resetPassword, googleAuth };
