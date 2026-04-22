@@ -119,6 +119,11 @@ export default function LandingPage() {
     const parallaxX = (mousePos.x - 0.5) * 20;
     const parallaxY = (mousePos.y - 0.5) * 20;
 
+    const scrollToSection = (id) => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+    };
+
     return (
         <div style={{ minHeight: '100vh', background: '#040812', color: 'white', fontFamily: "'Sora', 'DM Sans', sans-serif", overflowX: 'hidden' }}>
             <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -134,7 +139,6 @@ export default function LandingPage() {
 
                 {/* LOGO */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    {/* SVG Logo */}
                     <div style={{ position: 'relative', width: '40px', height: '40px' }}>
                         <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <defs>
@@ -143,13 +147,10 @@ export default function LandingPage() {
                                     <stop offset="100%" stopColor="#818cf8" />
                                 </linearGradient>
                             </defs>
-                            {/* Hexagon base */}
                             <path d="M20 2L36 11V29L20 38L4 29V11L20 2Z" fill="url(#logoGrad)" opacity="0.15" />
                             <path d="M20 2L36 11V29L20 38L4 29V11L20 2Z" stroke="url(#logoGrad)" strokeWidth="1.5" fill="none" />
-                            {/* Video camera icon inside */}
                             <rect x="9" y="14" width="15" height="12" rx="2.5" fill="url(#logoGrad)" />
                             <path d="M24 17L31 13V27L24 23V17Z" fill="url(#logoGrad)" />
-                            {/* Signal dots */}
                             <circle cx="12" cy="11" r="1.2" fill="#38bdf8" opacity="0.8" />
                             <circle cx="20" cy="8" r="1.2" fill="#818cf8" opacity="0.8" />
                             <circle cx="28" cy="11" r="1.2" fill="#38bdf8" opacity="0.8" />
@@ -160,10 +161,18 @@ export default function LandingPage() {
 
                 {/* Nav links */}
                 <div style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
-                    {['Features', 'Pricing', 'Enterprise'].map(item => (
-                        <span key={item} style={{ color: '#94a3b8', fontSize: '14px', fontWeight: '500', cursor: 'pointer', transition: 'color 0.2s' }}
+                    {[
+                        { label: 'Features', id: 'features' },
+                        { label: 'Pricing', id: 'pricing' },
+                        { label: 'Enterprise', id: 'enterprise' },
+                    ].map(item => (
+                        <span key={item.label}
+                            style={{ color: '#94a3b8', fontSize: '14px', fontWeight: '500', cursor: 'pointer', transition: 'color 0.2s' }}
                             onMouseEnter={e => e.target.style.color = 'white'}
-                            onMouseLeave={e => e.target.style.color = '#94a3b8'}>{item}</span>
+                            onMouseLeave={e => e.target.style.color = '#94a3b8'}
+                            onClick={() => scrollToSection(item.id)}>
+                            {item.label}
+                        </span>
                     ))}
                 </div>
 
@@ -186,13 +195,11 @@ export default function LandingPage() {
             {/* ── HERO ──────────────────────────────────────────────── */}
             <section style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', textAlign: 'center', padding: '120px 24px 80px' }}>
 
-                {/* Badge */}
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: '100px', padding: '7px 18px', marginBottom: '36px', fontSize: '13px', color: '#38bdf8', fontWeight: '500' }}>
                     <span style={{ width: '7px', height: '7px', background: '#4ade80', borderRadius: '50%', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                     Now with AI Meeting Intelligence — Real-time, Free
                 </div>
 
-                {/* Headline */}
                 <h1 style={{ fontSize: 'clamp(3rem, 7vw, 6.5rem)', fontWeight: '800', lineHeight: 1.05, marginBottom: '28px', maxWidth: '900px', letterSpacing: '-2px' }}>
                     The Meeting Platform<br />
                     <span style={{ background: 'linear-gradient(90deg, #38bdf8 0%, #818cf8 50%, #f472b6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
@@ -200,13 +207,11 @@ export default function LandingPage() {
                     </span>
                 </h1>
 
-                {/* Subheadline */}
                 <p style={{ fontSize: 'clamp(1rem, 2vw, 1.25rem)', color: '#64748b', maxWidth: '560px', lineHeight: 1.75, marginBottom: '48px', fontWeight: '400' }}>
                     HD video. AI-powered insights. Live polls. Real-time collaboration.
                     <br />Everything your team needs — in one place.
                 </p>
 
-                {/* CTAs */}
                 <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '72px' }}>
                     <button onClick={() => navigate('/auth')}
                         style={{ background: 'linear-gradient(135deg, #38bdf8, #818cf8)', border: 'none', color: 'white', padding: '18px 40px', borderRadius: '14px', fontSize: '1.05rem', fontWeight: '700', cursor: 'pointer', boxShadow: '0 8px 32px rgba(56,189,248,0.35)', transition: 'all 0.25s', display: 'flex', alignItems: 'center', gap: '10px' }}
@@ -224,11 +229,8 @@ export default function LandingPage() {
 
                 {/* Mock UI preview */}
                 <div style={{ position: 'relative', width: '100%', maxWidth: '860px', transform: `perspective(1200px) rotateX(4deg) translateY(${scrollY * 0.1}px)`, transition: 'transform 0.1s linear' }}>
-                    {/* Glow behind mockup */}
                     <div style={{ position: 'absolute', inset: '-20px', background: 'radial-gradient(ellipse at center, rgba(56,189,248,0.15) 0%, transparent 70%)', borderRadius: '32px', filter: 'blur(20px)' }} />
-
                     <div style={{ position: 'relative', background: 'rgba(10,14,26,0.9)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: '24px', overflow: 'hidden', backdropFilter: 'blur(10px)', boxShadow: '0 40px 120px rgba(0,0,0,0.8)' }}>
-                        {/* Mockup top bar */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
                             <div style={{ width: '11px', height: '11px', borderRadius: '50%', background: '#ef4444' }} />
                             <div style={{ width: '11px', height: '11px', borderRadius: '50%', background: '#f59e0b' }} />
@@ -237,8 +239,6 @@ export default function LandingPage() {
                                 <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '6px', padding: '4px 20px', fontSize: '12px', color: '#475569' }}>connectx.onrender.com/meeting</div>
                             </div>
                         </div>
-
-                        {/* Mockup video grid */}
                         <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                             {[
                                 { name: 'Arpit (Host) 👑', color: 'rgba(56,189,248,0.15)', border: 'rgba(56,189,248,0.3)', active: true },
@@ -255,8 +255,6 @@ export default function LandingPage() {
                                 </div>
                             ))}
                         </div>
-
-                        {/* Mockup control bar */}
                         <div style={{ padding: '14px 20px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'center', gap: '12px', alignItems: 'center' }}>
                             {['🤖 AI', '🗳️ Poll', '📊 Score', '📹', '🎤', '💬'].map((btn, i) => (
                                 <div key={i} style={{ padding: '7px 14px', borderRadius: '10px', background: i === 0 ? 'linear-gradient(135deg,#38bdf8,#818cf8)' : 'rgba(255,255,255,0.06)', border: `1px solid ${i === 0 ? 'transparent' : 'rgba(255,255,255,0.1)'}`, fontSize: '12px', color: 'white', fontWeight: i < 3 ? '700' : '400' }}>{btn}</div>
@@ -283,7 +281,7 @@ export default function LandingPage() {
             </section>
 
             {/* ── FEATURES ──────────────────────────────────────────── */}
-            <section style={{ position: 'relative', zIndex: 1, padding: '120px 48px', maxWidth: '1100px', margin: '0 auto' }}>
+            <section id="features" style={{ position: 'relative', zIndex: 1, padding: '120px 48px', maxWidth: '1100px', margin: '0 auto' }}>
                 <div style={{ textAlign: 'center', marginBottom: '72px' }}>
                     <div style={{ display: 'inline-block', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.25)', borderRadius: '100px', padding: '6px 18px', fontSize: '12px', color: '#a78bfa', fontWeight: '600', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
                         Everything You Need
@@ -322,6 +320,89 @@ export default function LandingPage() {
                 </div>
             </section>
 
+            {/* ── PRICING ───────────────────────────────────────────── */}
+            <section id="pricing" style={{ position: 'relative', zIndex: 1, padding: '120px 48px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ textAlign: 'center', marginBottom: '64px' }}>
+                    <div style={{ display: 'inline-block', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.25)', borderRadius: '100px', padding: '6px 18px', fontSize: '12px', color: '#34d399', fontWeight: '600', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
+                        Pricing
+                    </div>
+                    <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3.5rem)', fontWeight: '800', letterSpacing: '-1.5px', marginBottom: '16px', lineHeight: 1.1 }}>
+                        Simple, transparent<br />
+                        <span style={{ background: 'linear-gradient(90deg, #34d399, #38bdf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>pricing.</span>
+                    </h2>
+                    <p style={{ color: '#475569', fontSize: '1.1rem', maxWidth: '420px', margin: '0 auto', lineHeight: 1.7 }}>No hidden fees. No credit card required to start.</p>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', maxWidth: '900px', margin: '0 auto' }}>
+                    {[
+                        { plan: 'Free', price: '₹0', desc: 'Perfect for individuals and small teams.', features: ['Unlimited meetings', 'Up to 10 participants', 'HD video & audio', 'AI Assistant', 'Screen sharing'], color: '#38bdf8', highlight: false },
+                        { plan: 'Pro', price: '₹499/mo', desc: 'For growing teams that need more power.', features: ['Everything in Free', 'Up to 100 participants', 'AI Meeting Score', 'Live Polling', 'Meeting recordings', 'Priority support'], color: '#818cf8', highlight: true },
+                        { plan: 'Enterprise', price: 'Custom', desc: 'For large organizations with custom needs.', features: ['Everything in Pro', 'Unlimited participants', 'Custom integrations', 'Dedicated support', 'SLA guarantee', 'Admin dashboard'], color: '#f472b6', highlight: false },
+                    ].map((p, i) => (
+                        <div key={i} style={{ background: p.highlight ? 'rgba(129,140,248,0.08)' : 'rgba(255,255,255,0.02)', border: `1px solid ${p.highlight ? 'rgba(129,140,248,0.4)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '24px', padding: '36px 28px', position: 'relative', transition: 'all 0.3s' }}
+                            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 20px 60px ${p.color}20`; }}
+                            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                            {p.highlight && <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#818cf8,#38bdf8)', borderRadius: '100px', padding: '4px 16px', fontSize: '11px', fontWeight: '700', color: 'white', whiteSpace: 'nowrap' }}>⭐ Most Popular</div>}
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: p.color, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>{p.plan}</div>
+                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'white', marginBottom: '8px', letterSpacing: '-1px' }}>{p.price}</div>
+                            <div style={{ color: '#475569', fontSize: '13px', marginBottom: '24px', lineHeight: 1.6 }}>{p.desc}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '28px' }}>
+                                {p.features.map((f, j) => (
+                                    <div key={j} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#94a3b8' }}>
+                                        <span style={{ color: p.color, fontWeight: '700', fontSize: '15px' }}>✓</span> {f}
+                                    </div>
+                                ))}
+                            </div>
+                            <button onClick={() => navigate('/auth')}
+                                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: 'none', background: p.highlight ? 'linear-gradient(135deg,#818cf8,#38bdf8)' : `rgba(${p.color === '#38bdf8' ? '56,189,248' : p.color === '#f472b6' ? '244,114,182' : '129,140,248'},0.1)`, color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s', border: p.highlight ? 'none' : `1px solid ${p.color}40` }}
+                                onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; }}
+                                onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}>
+                                {p.plan === 'Enterprise' ? 'Contact Us' : 'Get Started Free'}
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* ── ENTERPRISE ────────────────────────────────────────── */}
+            <section id="enterprise" style={{ position: 'relative', zIndex: 1, padding: '120px 48px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ maxWidth: '900px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', alignItems: 'center' }}>
+                    <div>
+                        <div style={{ display: 'inline-block', background: 'rgba(244,114,182,0.1)', border: '1px solid rgba(244,114,182,0.25)', borderRadius: '100px', padding: '6px 18px', fontSize: '12px', color: '#f472b6', fontWeight: '600', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
+                            Enterprise
+                        </div>
+                        <h2 style={{ fontSize: 'clamp(1.8rem, 3vw, 2.8rem)', fontWeight: '800', letterSpacing: '-1px', marginBottom: '16px', lineHeight: 1.15 }}>
+                            Built for teams<br />
+                            <span style={{ background: 'linear-gradient(90deg,#f472b6,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>of any size.</span>
+                        </h2>
+                        <p style={{ color: '#475569', fontSize: '1rem', lineHeight: 1.8, marginBottom: '32px' }}>
+                            Get dedicated infrastructure, custom integrations, compliance tools, and a support team that actually picks up the phone.
+                        </p>
+                        <button onClick={() => window.open('mailto:enterprise@connectx.com', '_blank')}
+                            style={{ background: 'linear-gradient(135deg,#f472b6,#a78bfa)', border: 'none', color: 'white', padding: '14px 32px', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 8px 32px rgba(244,114,182,0.3)', transition: 'all 0.25s' }}
+                            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 14px 40px rgba(244,114,182,0.45)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(244,114,182,0.3)'; }}>
+                            Contact Sales →
+                        </button>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {[
+                            { icon: '🏢', title: 'Custom Deployment', desc: 'On-premise or private cloud options available.' },
+                            { icon: '🔒', title: 'SSO & Compliance', desc: 'SAML, GDPR, SOC2 and enterprise security standards.' },
+                            { icon: '📞', title: 'Dedicated Support', desc: '24/7 support with a named account manager.' },
+                            { icon: '📈', title: 'Advanced Analytics', desc: 'Full usage reports, engagement metrics, and exports.' },
+                        ].map((item, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px', padding: '18px 20px' }}>
+                                <div style={{ fontSize: '1.6rem', flexShrink: 0 }}>{item.icon}</div>
+                                <div>
+                                    <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '4px', color: 'white' }}>{item.title}</div>
+                                    <div style={{ color: '#475569', fontSize: '13px', lineHeight: 1.6 }}>{item.desc}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
             {/* ── TESTIMONIALS ─────────────────────────────────────── */}
             <section style={{ position: 'relative', zIndex: 1, padding: '100px 48px', background: 'rgba(255,255,255,0.01)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
                 <div style={{ textAlign: 'center', marginBottom: '64px' }}>
@@ -330,7 +411,6 @@ export default function LandingPage() {
                     </h2>
                     <p style={{ color: '#475569', fontSize: '1rem' }}>Real stories from real users</p>
                 </div>
-
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', maxWidth: '1000px', margin: '0 auto' }}>
                     {testimonials.map((t, i) => (
                         <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '28px', transition: 'transform 0.2s' }}
@@ -353,10 +433,7 @@ export default function LandingPage() {
             {/* ── CTA SECTION ───────────────────────────────────────── */}
             <section style={{ position: 'relative', zIndex: 1, padding: '120px 48px', textAlign: 'center' }}>
                 <div style={{ position: 'relative', maxWidth: '700px', margin: '0 auto', padding: '72px 48px', background: 'rgba(56,189,248,0.04)', border: '1px solid rgba(56,189,248,0.15)', borderRadius: '32px', overflow: 'hidden' }}>
-                    {/* Decorative glow */}
                     <div style={{ position: 'absolute', top: '-50px', left: '50%', transform: 'translateX(-50%)', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(56,189,248,0.12) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-
-                    {/* Big logo in CTA */}
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
                         <svg width="64" height="64" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <defs>
@@ -371,7 +448,6 @@ export default function LandingPage() {
                             <path d="M24 17L31 13V27L24 23V17Z" fill="url(#ctaLogoGrad)" />
                         </svg>
                     </div>
-
                     <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: '800', letterSpacing: '-1px', marginBottom: '16px', lineHeight: 1.1 }}>
                         Your next great meeting<br />
                         <span style={{ background: 'linear-gradient(90deg,#38bdf8,#818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>starts right now.</span>
@@ -382,8 +458,8 @@ export default function LandingPage() {
                     </p>
                     <button onClick={() => navigate('/auth')}
                         style={{ background: 'linear-gradient(135deg,#38bdf8,#818cf8)', border: 'none', color: 'white', padding: '18px 48px', borderRadius: '14px', fontSize: '1.1rem', fontWeight: '700', cursor: 'pointer', boxShadow: '0 8px 40px rgba(56,189,248,0.4)', transition: 'all 0.25s' }}
-                        onMouseEnter={e => { e.target.style.transform = 'translateY(-3px)'; e.target.style.boxShadow = '0 16px 56px rgba(56,189,248,0.55)'; }}
-                        onMouseLeave={e => { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 8px 40px rgba(56,189,248,0.4)'; }}>
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 16px 56px rgba(56,189,248,0.55)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 40px rgba(56,189,248,0.4)'; }}>
                         🚀 Launch ConnectX Free
                     </button>
                 </div>
@@ -402,10 +478,18 @@ export default function LandingPage() {
                 </div>
                 <p style={{ color: '#1e293b', fontSize: '13px', margin: 0 }}>© 2025 ConnectX. Built with ❤️ in India.</p>
                 <div style={{ display: 'flex', gap: '24px' }}>
-                    {['Privacy', 'Terms', 'Support'].map(item => (
-                        <span key={item} style={{ color: '#334155', fontSize: '13px', cursor: 'pointer', transition: 'color 0.2s' }}
+                    {[
+                        { label: 'Privacy', url: 'https://www.termsfeed.com/live/privacy-policy' },
+                        { label: 'Terms', url: 'https://www.termsfeed.com/live/terms-of-service' },
+                        { label: 'Support', url: 'mailto:support@connectx.com' },
+                    ].map(item => (
+                        <span key={item.label}
+                            style={{ color: '#334155', fontSize: '13px', cursor: 'pointer', transition: 'color 0.2s' }}
                             onMouseEnter={e => e.target.style.color = '#38bdf8'}
-                            onMouseLeave={e => e.target.style.color = '#334155'}>{item}</span>
+                            onMouseLeave={e => e.target.style.color = '#334155'}
+                            onClick={() => window.open(item.url, '_blank')}>
+                            {item.label}
+                        </span>
                     ))}
                 </div>
             </footer>
