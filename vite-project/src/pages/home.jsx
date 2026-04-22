@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react'
 import withAuth from '../utils/withAuth'
 import { useNavigate } from 'react-router-dom'
 import { AuthContext } from '../contexts/AuthContext';
+import UserMenu from '../components/UserMenu';
 
 function HomeComponent() {
     const navigate = useNavigate();
@@ -41,15 +42,7 @@ function HomeComponent() {
                     <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg,#667eea,#764ba2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📡</div>
                     <h2 style={{ margin: 0, fontWeight: '700', background: 'linear-gradient(90deg,#667eea,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>ConnectX</h2>
                 </div>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <button onClick={() => navigate('/history')} style={{ background: 'transparent', border: '1px solid rgba(102,126,234,0.3)', color: '#a78bfa', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}>
-                        📋 History
-                    </button>
-                    <button onClick={() => { localStorage.removeItem("token"); navigate("/auth"); }}
-                        style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}>
-                        Logout
-                    </button>
-                </div>
+                <UserMenu />
             </nav>
 
             {/* MAIN */}
