@@ -287,18 +287,22 @@ export default function VideoMeetComponent() {
     // ── Screen share trigger ──────────────────────────────────────
     useEffect(() => { if (screen) getDisplayMedia(); }, [screen]);
 
-    // ── FIX: Jab lobby screen se meeting screen pe jaate hain,
-    //    localVideoref naya DOM node hota hai.
-    //    setTimeout ensures DOM is fully painted before assigning srcObject.
+    // ── PERMANENT FIX: ref callback use karo ─────────────────────
+    // Jab bhi <video> DOM pe mount ho (lobby ya meeting dono mein),
+    // turant stream assign ho jaye — koi setTimeout ya race condition nahi
+    const localVideoCallback = useCallback((node) => {
+        localVideoref.current = node;
+        if (node && window.localStream) {
+            node.srcObject = window.localStream;
+            node.play().catch(() => { });
+        }
+    }, []);
+
+    // Backup: jab meeting screen mount ho aur stream ready ho
     useEffect(() => {
-        if (!askForUsername) {
-            const timer = setTimeout(() => {
-                if (localVideoref.current && window.localStream) {
-                    localVideoref.current.srcObject = window.localStream;
-                    localVideoref.current.play().catch(() => { });
-                }
-            }, 150);
-            return () => clearTimeout(timer);
+        if (!askForUsername && localVideoref.current && window.localStream) {
+            localVideoref.current.srcObject = window.localStream;
+            localVideoref.current.play().catch(() => { });
         }
     }, [askForUsername]);
 
@@ -321,15 +325,16 @@ export default function VideoMeetComponent() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             window.localStream = stream;
-            // Lobby preview mein assign karo
+            // PERMANENT FIX: ref callback se assign hoga automatically
+            // lekin agar ref already mounted hai toh direct assign bhi karo
             if (localVideoref.current) {
                 localVideoref.current.srcObject = stream;
+                localVideoref.current.play().catch(() => { });
             }
             setVideo(true);
             setAudio(true);
         } catch (e) {
             console.log("Media error:", e);
-            // Camera nahi mila toh silent black stream banao taaki WebRTC kaam kare
             window.localStream = createSilentBlackStream();
             setVideo(false);
             setAudio(false);
@@ -850,7 +855,7 @@ Give a JSON response ONLY (no markdown) with this exact structure:
             <p style={{ margin: 0, color: '#94a3b8' }}>Code: <strong style={{ color: '#a78bfa' }}>{meetingCode}</strong></p>
             {/* FIX: Lobby preview — srcObject getPermissions mein assign hoti hai */}
             <video
-                ref={localVideoref}
+                ref={localVideoCallback}
                 autoPlay
                 muted
                 playsInline
@@ -919,7 +924,7 @@ Give a JSON response ONLY (no markdown) with this exact structure:
                 {/* Self tile — hamesha pehle */}
                 <div className={styles.videoTile}>
                     <video
-                        ref={localVideoref}
+                        ref={localVideoCallback}
                         autoPlay
                         muted
                         playsInline
