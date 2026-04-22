@@ -12,6 +12,7 @@ import StopScreenShareIcon from '@mui/icons-material/StopScreenShare';
 import ChatIcon from '@mui/icons-material/Chat';
 import PeopleIcon from '@mui/icons-material/People';
 import server from '../environment';
+import UserMenu from '../components/UserMenu';
 
 const server_url = server;
 var connections = {};
@@ -627,6 +628,11 @@ export default function VideoMeetComponent() {
     return (
         <div className={styles.meetVideoContainer}>
             <FloatingReactions reactions={reactions} />
+
+            {/* ── TOP-RIGHT USER MENU ── */}
+            <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 25 }}>
+                <UserMenu />
+            </div>
             <AIAssistant isOpen={showAI} onClose={() => setShowAI(false)} username={username} meetingCode={meetingCode} participants={participantList} />
             <ParticipantsPanel
                 isOpen={showParticipants}
