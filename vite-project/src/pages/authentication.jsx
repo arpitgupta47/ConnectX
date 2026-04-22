@@ -40,7 +40,7 @@ function PasswordStrength({ password }) {
     );
 }
 
-// ── ConnectX Logo SVG ─────────────────────────────────────────────
+// ── Logo ──────────────────────────────────────────────────────────
 function Logo({ size = 48 }) {
     return (
         <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -61,7 +61,7 @@ function Logo({ size = 48 }) {
     );
 }
 
-// ── Input Field Component ─────────────────────────────────────────
+// ── Input Field ───────────────────────────────────────────────────
 function InputField({ label, type = 'text', placeholder, value, onChange, icon, rightEl, required }) {
     const [focused, setFocused] = useState(false);
     return (
@@ -117,24 +117,30 @@ function PrimaryBtn({ children, onClick, loading, type = 'button', disabled }) {
 }
 
 // ── Google Button ─────────────────────────────────────────────────
-function GoogleBtn({ onClick }) {
+function GoogleBtn({ onClick, loading }) {
     return (
-        <button type="button" onClick={onClick}
-            style={{ width: '100%', padding: '13px', background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white', fontSize: '14px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'all 0.2s', fontFamily: 'inherit' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+        <button type="button" onClick={onClick} disabled={loading}
+            style={{ width: '100%', padding: '13px', background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white', fontSize: '14px', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'all 0.2s', fontFamily: 'inherit', opacity: loading ? 0.6 : 1 }}
+            onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; } }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}>
-            <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
-                <path d="M47.5 24.5C47.5 22.6 47.3 20.8 47 19H24V29.4H37.3C36.7 32.4 35 34.9 32.5 36.6V43H40.3C44.7 38.9 47.5 32.2 47.5 24.5Z" fill="#4285F4"/>
-                <path d="M24 48C30.6 48 36.2 45.8 40.3 43L32.5 36.6C30.3 38.1 27.4 39 24 39C17.6 39 12.2 34.9 10.2 29.2H2.2V35.8C6.3 44 14.5 48 24 48Z" fill="#34A853"/>
-                <path d="M10.2 29.2C9.7 27.7 9.5 26.1 9.5 24.5C9.5 22.9 9.8 21.3 10.2 19.8V13.2H2.2C0.8 16 0 19.2 0 22.5C0 25.8 0.8 29 2.2 31.8L10.2 29.2Z" fill="#FBBC05"/>
-                <path d="M24 10C27.7 10 30.9 11.3 33.5 13.7L40.5 6.7C36.2 2.7 30.6 0 24 0C14.5 0 6.3 4 2.2 12.2L10.2 18.8C12.2 13.1 17.6 10 24 10Z" fill="#EA4335"/>
-            </svg>
-            Continue with Google
+            {loading ? (
+                <><div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />Signing in...</>
+            ) : (
+                <>
+                    <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+                        <path d="M47.5 24.5C47.5 22.6 47.3 20.8 47 19H24V29.4H37.3C36.7 32.4 35 34.9 32.5 36.6V43H40.3C44.7 38.9 47.5 32.2 47.5 24.5Z" fill="#4285F4"/>
+                        <path d="M24 48C30.6 48 36.2 45.8 40.3 43L32.5 36.6C30.3 38.1 27.4 39 24 39C17.6 39 12.2 34.9 10.2 29.2H2.2V35.8C6.3 44 14.5 48 24 48Z" fill="#34A853"/>
+                        <path d="M10.2 29.2C9.7 27.7 9.5 26.1 9.5 24.5C9.5 22.9 9.8 21.3 10.2 19.8V13.2H2.2C0.8 16 0 19.2 0 22.5C0 25.8 0.8 29 2.2 31.8L10.2 29.2Z" fill="#FBBC05"/>
+                        <path d="M24 10C27.7 10 30.9 11.3 33.5 13.7L40.5 6.7C36.2 2.7 30.6 0 24 0C14.5 0 6.3 4 2.2 12.2L10.2 18.8C12.2 13.1 17.6 10 24 10Z" fill="#EA4335"/>
+                    </svg>
+                    Continue with Google
+                </>
+            )}
         </button>
     );
 }
 
-// ── Alert box ─────────────────────────────────────────────────────
+// ── Alert ─────────────────────────────────────────────────────────
 function Alert({ type, msg }) {
     if (!msg) return null;
     const isErr = type === 'error';
@@ -160,10 +166,10 @@ function Divider() {
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────
 export default function Authentication() {
-    // 'signin' | 'signup' | 'forgot' | 'otp'
     const [screen, setScreen] = useState('signin');
     const [shake, setShake] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
@@ -187,7 +193,7 @@ export default function Authentication() {
     const [fpShowPass, setFpShowPass] = useState(false);
 
     const navigate = useNavigate();
-    const { handleRegister, handleLogin } = useContext(AuthContext);
+    const { handleRegister, handleLogin, handleGoogleLogin } = useContext(AuthContext);
 
     useEffect(() => {
         const saved = localStorage.getItem('cx_remember');
@@ -196,7 +202,6 @@ export default function Authentication() {
 
     const reset = () => { setError(''); setSuccess(''); };
     const goTo = (s) => { reset(); setScreen(s); };
-
     const triggerShake = () => { setShake(true); setTimeout(() => setShake(false), 600); };
 
     // ── SIGN IN ───────────────────────────────────────────────────
@@ -235,6 +240,24 @@ export default function Authentication() {
             setError(err.message || 'Registration failed');
             triggerShake();
         } finally { setLoading(false); }
+    };
+
+    // ── GOOGLE LOGIN/SIGNUP ───────────────────────────────────────
+    const handleGoogleClick = async () => {
+        reset();
+        setGoogleLoading(true);
+        try {
+            await handleGoogleLogin();
+            navigate('/home');
+        } catch (err) {
+            // User closed popup
+            if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+                setError('Google sign-in was cancelled.');
+            } else {
+                setError(err.response?.data?.message || err.message || 'Google login failed');
+            }
+            triggerShake();
+        } finally { setGoogleLoading(false); }
     };
 
     // ── SEND OTP ──────────────────────────────────────────────────
@@ -309,7 +332,6 @@ export default function Authentication() {
             <Orbs />
 
             <div style={card}>
-                {/* Logo */}
                 <div style={{ textAlign: 'center', marginBottom: '28px' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
                         <Logo size={52} />
@@ -320,7 +342,7 @@ export default function Authentication() {
 
                 <div style={cardInner}>
 
-                    {/* ── SIGN IN SCREEN ─────────────────────────── */}
+                    {/* ── SIGN IN ─────────────────────────── */}
                     {screen === 'signin' && (
                         <>
                             <div style={{ marginBottom: '24px' }}>
@@ -354,11 +376,11 @@ export default function Authentication() {
                             </form>
 
                             <Divider />
-                            <GoogleBtn onClick={() => setError('Google login coming soon!')} />
+                            <GoogleBtn onClick={handleGoogleClick} loading={googleLoading} />
                         </>
                     )}
 
-                    {/* ── SIGN UP SCREEN ─────────────────────────── */}
+                    {/* ── SIGN UP ─────────────────────────── */}
                     {screen === 'signup' && (
                         <>
                             <div style={{ marginBottom: '24px' }}>
@@ -386,31 +408,27 @@ export default function Authentication() {
                                     </div>
                                     <PasswordStrength password={suPassword} />
                                 </div>
-
                                 <PrimaryBtn type="submit" loading={loading}>✨ Sign Up</PrimaryBtn>
                             </form>
 
                             <Divider />
-                            <GoogleBtn onClick={() => setError('Google signup coming soon!')} />
+                            <GoogleBtn onClick={handleGoogleClick} loading={googleLoading} />
                         </>
                     )}
 
-                    {/* ── FORGOT PASSWORD SCREEN ────────────────── */}
+                    {/* ── FORGOT PASSWORD ────────────────── */}
                     {screen === 'forgot' && (
                         <>
                             <button onClick={() => goTo('signin')} style={{ background: 'none', border: 'none', color: '#818cf8', cursor: 'pointer', fontSize: '13px', fontWeight: '600', padding: 0, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'inherit' }}>
                                 ← Back to Login
                             </button>
-
                             <div style={{ marginBottom: '24px' }}>
                                 <div style={{ fontSize: '2.2rem', marginBottom: '10px' }}>🔐</div>
                                 <h2 style={{ margin: '0 0 6px', fontSize: '1.35rem', fontWeight: '700', color: 'white' }}>Forgot Password</h2>
                                 <p style={{ margin: 0, color: '#334155', fontSize: '13px', lineHeight: 1.6 }}>Enter your email to reset your password.</p>
                             </div>
-
                             <Alert type="error" msg={error} />
                             <Alert type="success" msg={success} />
-
                             <form onSubmit={handleSendOtp}>
                                 <InputField label="Email Address" type="email" placeholder="you@email.com" value={fpEmail} onChange={e => setFpEmail(e.target.value)} icon="📧" required />
                                 <div style={{ height: '4px' }} />
@@ -419,13 +437,12 @@ export default function Authentication() {
                         </>
                     )}
 
-                    {/* ── OTP VERIFY + NEW PASSWORD SCREEN ─────── */}
+                    {/* ── OTP + NEW PASSWORD ─────────────── */}
                     {screen === 'otp' && (
                         <>
                             <button onClick={() => goTo('forgot')} style={{ background: 'none', border: 'none', color: '#818cf8', cursor: 'pointer', fontSize: '13px', fontWeight: '600', padding: 0, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'inherit' }}>
                                 ← Back
                             </button>
-
                             <div style={{ marginBottom: '24px' }}>
                                 <div style={{ fontSize: '2.2rem', marginBottom: '10px' }}>📬</div>
                                 <h2 style={{ margin: '0 0 6px', fontSize: '1.35rem', fontWeight: '700', color: 'white' }}>Check your email</h2>
@@ -433,10 +450,8 @@ export default function Authentication() {
                                     OTP sent to <strong style={{ color: '#38bdf8' }}>{fpEmail}</strong>.<br />Expires in 10 minutes.
                                 </p>
                             </div>
-
                             <Alert type="error" msg={error} />
                             <Alert type="success" msg={success} />
-
                             <form onSubmit={handleResetPassword}>
                                 <div style={{ marginBottom: '16px' }}>
                                     <label style={{ display: 'block', color: '#64748b', fontSize: '12px', fontWeight: '600', marginBottom: '7px', letterSpacing: '0.4px', textTransform: 'uppercase' }}>Enter OTP</label>
@@ -450,21 +465,18 @@ export default function Authentication() {
                                         style={{ width: '100%', padding: '14px', background: 'rgba(56,189,248,0.05)', border: '1.5px solid rgba(56,189,248,0.25)', borderRadius: '12px', color: '#38bdf8', fontSize: '22px', fontWeight: '800', letterSpacing: '10px', textAlign: 'center', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }}
                                     />
                                 </div>
-
                                 <div style={{ marginBottom: '16px' }}>
                                     <label style={{ display: 'block', color: '#64748b', fontSize: '12px', fontWeight: '600', marginBottom: '7px', letterSpacing: '0.4px', textTransform: 'uppercase' }}>New Password</label>
                                     <div style={{ position: 'relative' }}>
                                         <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px', pointerEvents: 'none', opacity: 0.5 }}>🔑</span>
                                         <input type={fpShowPass ? 'text' : 'password'} placeholder="New password" value={fpNewPass} onChange={e => setFpNewPass(e.target.value)} required
                                             style={{ width: '100%', padding: '13px 48px 13px 42px', background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.09)', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
-                                        <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }}>{showPassBtn(fpShowPass, setFpShowPass)}</div>
+                                        <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }}>{showPassBtn(fpShowPass, setSuShowPass)}</div>
                                     </div>
                                     <PasswordStrength password={fpNewPass} />
                                 </div>
-
                                 <PrimaryBtn type="submit" loading={loading}>🔓 Reset Password</PrimaryBtn>
                             </form>
-
                             <div style={{ textAlign: 'center', marginTop: '16px' }}>
                                 <button onClick={handleSendOtp} style={{ background: 'none', border: 'none', color: '#475569', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>
                                     Didn't receive? <span style={{ color: '#818cf8', fontWeight: '600' }}>Resend OTP</span>
