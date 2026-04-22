@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addToHistory, getUserHistory, login, register, sendOtp, resetPassword, googleAuth } from "../controllers/user.controller.js";
+import { addToHistory, getUserHistory, login, register, sendOtp, resetPassword, googleAuth, getProfile } from "../controllers/user.controller.js";
 import { aiChat } from "../controllers/ai.controller.js";
 
 const router = Router();
@@ -15,6 +15,9 @@ router.post("/google-auth", googleAuth);
 // OTP / Forgot Password
 router.post("/send-otp", sendOtp);
 router.post("/reset-password", resetPassword);
+
+// Profile
+router.get("/get_profile", getProfile);
 
 // AI proxy route
 router.post("/ai/chat", aiChat);
