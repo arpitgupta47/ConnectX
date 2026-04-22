@@ -10,21 +10,18 @@ export default function LandingPage() {
     const statsRef = useRef(null);
     const [counts, setCounts] = useState({ meetings: 0, users: 0, uptime: 0 });
 
-    // Mouse parallax
     useEffect(() => {
         const handleMouse = e => setMousePos({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight });
         window.addEventListener('mousemove', handleMouse);
         return () => window.removeEventListener('mousemove', handleMouse);
     }, []);
 
-    // Scroll
     useEffect(() => {
         const handleScroll = () => setScrollY(window.scrollY);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Stats counter animation
     useEffect(() => {
         const observer = new IntersectionObserver(([entry]) => {
             if (entry.isIntersecting) { setStatsVisible(true); observer.disconnect(); }
@@ -52,7 +49,6 @@ export default function LandingPage() {
         requestAnimationFrame(tick);
     }, [statsVisible]);
 
-    // Particle canvas
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -60,7 +56,6 @@ export default function LandingPage() {
         const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
         resize();
         window.addEventListener('resize', resize);
-
         const particles = Array.from({ length: 60 }, () => ({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
@@ -69,7 +64,6 @@ export default function LandingPage() {
             dy: (Math.random() - 0.5) * 0.4,
             alpha: Math.random() * 0.4 + 0.1,
         }));
-
         let animId;
         const draw = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -121,7 +115,38 @@ export default function LandingPage() {
 
     const scrollToSection = (id) => {
         const el = document.getElementById(id);
-        if (el) el.scrollIntoView({ behavior: 'smooth' });
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    const openLink = (url) => {
+        if (url.startsWith('mailto:')) {
+            window.location.href = url;
+        } else {
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+    };
+
+    const navBtnStyle = {
+        background: 'none',
+        border: 'none',
+        color: '#94a3b8',
+        fontSize: '14px',
+        fontWeight: '500',
+        cursor: 'pointer',
+        fontFamily: "'Sora', 'DM Sans', sans-serif",
+        padding: '4px 0',
+        transition: 'color 0.2s',
+    };
+
+    const footerLinkStyle = {
+        background: 'none',
+        border: 'none',
+        color: '#94a3b8',
+        fontSize: '13px',
+        cursor: 'pointer',
+        fontFamily: "'Sora', 'DM Sans', sans-serif",
+        padding: '4px 0',
+        transition: 'color 0.2s',
     };
 
     return (
@@ -130,71 +155,66 @@ export default function LandingPage() {
 
             <canvas ref={canvasRef} style={{ position: 'fixed', top: 0, left: 0, zIndex: 0, pointerEvents: 'none' }} />
 
-            {/* Ambient glow blobs */}
             <div style={{ position: 'fixed', top: '10%', left: '15%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(56,189,248,0.08) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', zIndex: 0, transform: `translate(${parallaxX * 0.5}px, ${parallaxY * 0.5}px)`, transition: 'transform 0.1s ease' }} />
             <div style={{ position: 'fixed', top: '40%', right: '10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(167,139,250,0.07) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', zIndex: 0, transform: `translate(${-parallaxX * 0.3}px, ${-parallaxY * 0.3}px)`, transition: 'transform 0.1s ease' }} />
 
-            {/* ── NAVBAR ────────────────────────────────────────────── */}
+            {/* ── NAVBAR ── */}
             <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 48px', backdropFilter: 'blur(24px)', background: scrollY > 50 ? 'rgba(4,8,18,0.85)' : 'transparent', borderBottom: scrollY > 50 ? '1px solid rgba(56,189,248,0.1)' : '1px solid transparent', transition: 'all 0.4s ease' }}>
 
-                {/* LOGO */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ position: 'relative', width: '40px', height: '40px' }}>
-                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <defs>
-                                <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stopColor="#38bdf8" />
-                                    <stop offset="100%" stopColor="#818cf8" />
-                                </linearGradient>
-                            </defs>
-                            <path d="M20 2L36 11V29L20 38L4 29V11L20 2Z" fill="url(#logoGrad)" opacity="0.15" />
-                            <path d="M20 2L36 11V29L20 38L4 29V11L20 2Z" stroke="url(#logoGrad)" strokeWidth="1.5" fill="none" />
-                            <rect x="9" y="14" width="15" height="12" rx="2.5" fill="url(#logoGrad)" />
-                            <path d="M24 17L31 13V27L24 23V17Z" fill="url(#logoGrad)" />
-                            <circle cx="12" cy="11" r="1.2" fill="#38bdf8" opacity="0.8" />
-                            <circle cx="20" cy="8" r="1.2" fill="#818cf8" opacity="0.8" />
-                            <circle cx="28" cy="11" r="1.2" fill="#38bdf8" opacity="0.8" />
-                        </svg>
-                    </div>
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                        <defs>
+                            <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#38bdf8" />
+                                <stop offset="100%" stopColor="#818cf8" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M20 2L36 11V29L20 38L4 29V11L20 2Z" fill="url(#logoGrad)" opacity="0.15" />
+                        <path d="M20 2L36 11V29L20 38L4 29V11L20 2Z" stroke="url(#logoGrad)" strokeWidth="1.5" fill="none" />
+                        <rect x="9" y="14" width="15" height="12" rx="2.5" fill="url(#logoGrad)" />
+                        <path d="M24 17L31 13V27L24 23V17Z" fill="url(#logoGrad)" />
+                        <circle cx="12" cy="11" r="1.2" fill="#38bdf8" opacity="0.8" />
+                        <circle cx="20" cy="8" r="1.2" fill="#818cf8" opacity="0.8" />
+                        <circle cx="28" cy="11" r="1.2" fill="#38bdf8" opacity="0.8" />
+                    </svg>
                     <span style={{ fontSize: '1.5rem', fontWeight: '800', background: 'linear-gradient(90deg, #38bdf8, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.5px' }}>ConnectX</span>
                 </div>
 
-                {/* Nav links */}
                 <div style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
                     {[
                         { label: 'Features', id: 'features' },
                         { label: 'Pricing', id: 'pricing' },
                         { label: 'Enterprise', id: 'enterprise' },
                     ].map(item => (
-                        <span key={item.label}
-                            style={{ color: '#94a3b8', fontSize: '14px', fontWeight: '500', cursor: 'pointer', transition: 'color 0.2s' }}
-                            onMouseEnter={e => e.target.style.color = 'white'}
-                            onMouseLeave={e => e.target.style.color = '#94a3b8'}
+                        <button
+                            key={item.label}
+                            style={navBtnStyle}
+                            onMouseEnter={e => e.currentTarget.style.color = 'white'}
+                            onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
                             onClick={() => scrollToSection(item.id)}>
                             {item.label}
-                        </span>
+                        </button>
                     ))}
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <button onClick={() => navigate('/auth')}
-                        style={{ background: 'transparent', border: '1px solid rgba(56,189,248,0.3)', color: '#38bdf8', padding: '9px 22px', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', transition: 'all 0.2s' }}
-                        onMouseEnter={e => { e.target.style.background = 'rgba(56,189,248,0.08)'; e.target.style.borderColor = 'rgba(56,189,248,0.6)'; }}
-                        onMouseLeave={e => { e.target.style.background = 'transparent'; e.target.style.borderColor = 'rgba(56,189,248,0.3)'; }}>
+                        style={{ background: 'transparent', border: '1px solid rgba(56,189,248,0.3)', color: '#38bdf8', padding: '9px 22px', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', transition: 'all 0.2s', fontFamily: 'inherit' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(56,189,248,0.08)'; e.currentTarget.style.borderColor = 'rgba(56,189,248,0.6)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(56,189,248,0.3)'; }}>
                         Sign In
                     </button>
                     <button onClick={() => navigate('/auth')}
-                        style={{ background: 'linear-gradient(135deg, #38bdf8, #818cf8)', border: 'none', color: 'white', padding: '9px 22px', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', fontWeight: '700', boxShadow: '0 4px 20px rgba(56,189,248,0.3)', transition: 'all 0.2s' }}
-                        onMouseEnter={e => { e.target.style.transform = 'translateY(-1px)'; e.target.style.boxShadow = '0 6px 28px rgba(56,189,248,0.45)'; }}
-                        onMouseLeave={e => { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 4px 20px rgba(56,189,248,0.3)'; }}>
+                        style={{ background: 'linear-gradient(135deg, #38bdf8, #818cf8)', border: 'none', color: 'white', padding: '9px 22px', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', fontWeight: '700', boxShadow: '0 4px 20px rgba(56,189,248,0.3)', transition: 'all 0.2s', fontFamily: 'inherit' }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(56,189,248,0.45)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(56,189,248,0.3)'; }}>
                         Get Started Free
                     </button>
                 </div>
             </nav>
 
-            {/* ── HERO ──────────────────────────────────────────────── */}
+            {/* ── HERO ── */}
             <section style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', textAlign: 'center', padding: '120px 24px 80px' }}>
-
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: '100px', padding: '7px 18px', marginBottom: '36px', fontSize: '13px', color: '#38bdf8', fontWeight: '500' }}>
                     <span style={{ width: '7px', height: '7px', background: '#4ade80', borderRadius: '50%', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                     Now with AI Meeting Intelligence — Real-time, Free
@@ -214,22 +234,22 @@ export default function LandingPage() {
 
                 <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '72px' }}>
                     <button onClick={() => navigate('/auth')}
-                        style={{ background: 'linear-gradient(135deg, #38bdf8, #818cf8)', border: 'none', color: 'white', padding: '18px 40px', borderRadius: '14px', fontSize: '1.05rem', fontWeight: '700', cursor: 'pointer', boxShadow: '0 8px 32px rgba(56,189,248,0.35)', transition: 'all 0.25s', display: 'flex', alignItems: 'center', gap: '10px' }}
+                        style={{ background: 'linear-gradient(135deg, #38bdf8, #818cf8)', border: 'none', color: 'white', padding: '18px 40px', borderRadius: '14px', fontSize: '1.05rem', fontWeight: '700', cursor: 'pointer', boxShadow: '0 8px 32px rgba(56,189,248,0.35)', transition: 'all 0.25s', display: 'flex', alignItems: 'center', gap: '10px', fontFamily: 'inherit' }}
                         onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 16px 48px rgba(56,189,248,0.5)'; }}
                         onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(56,189,248,0.35)'; }}>
                         🚀 Start Meeting — Free
                     </button>
                     <button onClick={() => navigate('/auth')}
-                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: 'white', padding: '18px 40px', borderRadius: '14px', fontSize: '1.05rem', cursor: 'pointer', fontWeight: '500', transition: 'all 0.25s', backdropFilter: 'blur(10px)' }}
+                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', color: 'white', padding: '18px 40px', borderRadius: '14px', fontSize: '1.05rem', cursor: 'pointer', fontWeight: '500', transition: 'all 0.25s', backdropFilter: 'blur(10px)', fontFamily: 'inherit' }}
                         onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
                         onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}>
                         Join a Meeting →
                     </button>
                 </div>
 
-                {/* Mock UI preview */}
+                {/* Mock UI */}
                 <div style={{ position: 'relative', width: '100%', maxWidth: '860px', transform: `perspective(1200px) rotateX(4deg) translateY(${scrollY * 0.1}px)`, transition: 'transform 0.1s linear' }}>
-                    <div style={{ position: 'absolute', inset: '-20px', background: 'radial-gradient(ellipse at center, rgba(56,189,248,0.15) 0%, transparent 70%)', borderRadius: '32px', filter: 'blur(20px)' }} />
+                    <div style={{ position: 'absolute', inset: '-20px', background: 'radial-gradient(ellipse at center, rgba(56,189,248,0.15) 0%, transparent 70%)', borderRadius: '32px', filter: 'blur(20px)', pointerEvents: 'none' }} />
                     <div style={{ position: 'relative', background: 'rgba(10,14,26,0.9)', border: '1px solid rgba(56,189,248,0.2)', borderRadius: '24px', overflow: 'hidden', backdropFilter: 'blur(10px)', boxShadow: '0 40px 120px rgba(0,0,0,0.8)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
                             <div style={{ width: '11px', height: '11px', borderRadius: '50%', background: '#ef4444' }} />
@@ -265,7 +285,7 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* ── STATS ─────────────────────────────────────────────── */}
+            {/* ── STATS ── */}
             <section ref={statsRef} style={{ position: 'relative', zIndex: 1, padding: '80px 48px', display: 'flex', justifyContent: 'center', gap: '80px', flexWrap: 'wrap', borderTop: '1px solid rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                 {[
                     { value: counts.meetings >= 1000000 ? `${(counts.meetings / 1000000).toFixed(1)}M+` : `${Math.floor(counts.meetings / 1000)}K+`, label: 'Meetings Hosted', color: '#38bdf8' },
@@ -280,7 +300,7 @@ export default function LandingPage() {
                 ))}
             </section>
 
-            {/* ── FEATURES ──────────────────────────────────────────── */}
+            {/* ── FEATURES ── */}
             <section id="features" style={{ position: 'relative', zIndex: 1, padding: '120px 48px', maxWidth: '1100px', margin: '0 auto' }}>
                 <div style={{ textAlign: 'center', marginBottom: '72px' }}>
                     <div style={{ display: 'inline-block', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.25)', borderRadius: '100px', padding: '6px 18px', fontSize: '12px', color: '#a78bfa', fontWeight: '600', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
@@ -294,7 +314,6 @@ export default function LandingPage() {
                         Every feature is built to make your meetings more productive and your team more connected.
                     </p>
                 </div>
-
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
                     {features.map((f, i) => (
                         <div key={i}
@@ -320,7 +339,7 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* ── PRICING ───────────────────────────────────────────── */}
+            {/* ── PRICING ── */}
             <section id="pricing" style={{ position: 'relative', zIndex: 1, padding: '120px 48px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
                 <div style={{ textAlign: 'center', marginBottom: '64px' }}>
                     <div style={{ display: 'inline-block', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.25)', borderRadius: '100px', padding: '6px 18px', fontSize: '12px', color: '#34d399', fontWeight: '600', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
@@ -338,10 +357,13 @@ export default function LandingPage() {
                         { plan: 'Pro', price: '₹499/mo', desc: 'For growing teams that need more power.', features: ['Everything in Free', 'Up to 100 participants', 'AI Meeting Score', 'Live Polling', 'Meeting recordings', 'Priority support'], color: '#818cf8', highlight: true },
                         { plan: 'Enterprise', price: 'Custom', desc: 'For large organizations with custom needs.', features: ['Everything in Pro', 'Unlimited participants', 'Custom integrations', 'Dedicated support', 'SLA guarantee', 'Admin dashboard'], color: '#f472b6', highlight: false },
                     ].map((p, i) => (
-                        <div key={i} style={{ background: p.highlight ? 'rgba(129,140,248,0.08)' : 'rgba(255,255,255,0.02)', border: `1px solid ${p.highlight ? 'rgba(129,140,248,0.4)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '24px', padding: '36px 28px', position: 'relative', transition: 'all 0.3s' }}
+                        <div key={i}
+                            style={{ background: p.highlight ? 'rgba(129,140,248,0.08)' : 'rgba(255,255,255,0.02)', border: `1px solid ${p.highlight ? 'rgba(129,140,248,0.4)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '24px', padding: '36px 28px', position: 'relative', transition: 'all 0.3s' }}
                             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 20px 60px ${p.color}20`; }}
                             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                            {p.highlight && <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#818cf8,#38bdf8)', borderRadius: '100px', padding: '4px 16px', fontSize: '11px', fontWeight: '700', color: 'white', whiteSpace: 'nowrap' }}>⭐ Most Popular</div>}
+                            {p.highlight && (
+                                <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#818cf8,#38bdf8)', borderRadius: '100px', padding: '4px 16px', fontSize: '11px', fontWeight: '700', color: 'white', whiteSpace: 'nowrap' }}>⭐ Most Popular</div>
+                            )}
                             <div style={{ fontSize: '14px', fontWeight: '600', color: p.color, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>{p.plan}</div>
                             <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'white', marginBottom: '8px', letterSpacing: '-1px' }}>{p.price}</div>
                             <div style={{ color: '#475569', fontSize: '13px', marginBottom: '24px', lineHeight: 1.6 }}>{p.desc}</div>
@@ -352,8 +374,9 @@ export default function LandingPage() {
                                     </div>
                                 ))}
                             </div>
-                            <button onClick={() => navigate('/auth')}
-                                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: 'none', background: p.highlight ? 'linear-gradient(135deg,#818cf8,#38bdf8)' : `rgba(${p.color === '#38bdf8' ? '56,189,248' : p.color === '#f472b6' ? '244,114,182' : '129,140,248'},0.1)`, color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s', border: p.highlight ? 'none' : `1px solid ${p.color}40` }}
+                            <button
+                                onClick={() => navigate('/auth')}
+                                style={{ width: '100%', padding: '12px', borderRadius: '12px', background: p.highlight ? 'linear-gradient(135deg,#818cf8,#38bdf8)' : 'transparent', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit', border: p.highlight ? 'none' : `1px solid ${p.color}60` }}
                                 onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; }}
                                 onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}>
                                 {p.plan === 'Enterprise' ? 'Contact Us' : 'Get Started Free'}
@@ -363,7 +386,7 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* ── ENTERPRISE ────────────────────────────────────────── */}
+            {/* ── ENTERPRISE ── */}
             <section id="enterprise" style={{ position: 'relative', zIndex: 1, padding: '120px 48px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
                 <div style={{ maxWidth: '900px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', alignItems: 'center' }}>
                     <div>
@@ -377,8 +400,9 @@ export default function LandingPage() {
                         <p style={{ color: '#475569', fontSize: '1rem', lineHeight: 1.8, marginBottom: '32px' }}>
                             Get dedicated infrastructure, custom integrations, compliance tools, and a support team that actually picks up the phone.
                         </p>
-                        <button onClick={() => window.open('mailto:enterprise@connectx.com', '_blank')}
-                            style={{ background: 'linear-gradient(135deg,#f472b6,#a78bfa)', border: 'none', color: 'white', padding: '14px 32px', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 8px 32px rgba(244,114,182,0.3)', transition: 'all 0.25s' }}
+                        <button
+                            onClick={() => openLink('mailto:enterprise@connectx.com')}
+                            style={{ background: 'linear-gradient(135deg,#f472b6,#a78bfa)', border: 'none', color: 'white', padding: '14px 32px', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 8px 32px rgba(244,114,182,0.3)', transition: 'all 0.25s', fontFamily: 'inherit' }}
                             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 14px 40px rgba(244,114,182,0.45)'; }}
                             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(244,114,182,0.3)'; }}>
                             Contact Sales →
@@ -403,7 +427,7 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* ── TESTIMONIALS ─────────────────────────────────────── */}
+            {/* ── TESTIMONIALS ── */}
             <section style={{ position: 'relative', zIndex: 1, padding: '100px 48px', background: 'rgba(255,255,255,0.01)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
                 <div style={{ textAlign: 'center', marginBottom: '64px' }}>
                     <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 3rem)', fontWeight: '800', letterSpacing: '-1px', marginBottom: '12px' }}>
@@ -413,7 +437,8 @@ export default function LandingPage() {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', maxWidth: '1000px', margin: '0 auto' }}>
                     {testimonials.map((t, i) => (
-                        <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '28px', transition: 'transform 0.2s' }}
+                        <div key={i}
+                            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '28px', transition: 'transform 0.2s' }}
                             onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px)'}
                             onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
                             <div style={{ fontSize: '1.5rem', marginBottom: '14px', color: '#f59e0b' }}>❝</div>
@@ -430,12 +455,12 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* ── CTA SECTION ───────────────────────────────────────── */}
+            {/* ── CTA ── */}
             <section style={{ position: 'relative', zIndex: 1, padding: '120px 48px', textAlign: 'center' }}>
                 <div style={{ position: 'relative', maxWidth: '700px', margin: '0 auto', padding: '72px 48px', background: 'rgba(56,189,248,0.04)', border: '1px solid rgba(56,189,248,0.15)', borderRadius: '32px', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', top: '-50px', left: '50%', transform: 'translateX(-50%)', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(56,189,248,0.12) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-                        <svg width="64" height="64" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="64" height="64" viewBox="0 0 40 40" fill="none">
                             <defs>
                                 <linearGradient id="ctaLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                                     <stop offset="0%" stopColor="#38bdf8" />
@@ -457,7 +482,7 @@ export default function LandingPage() {
                         Just you, your team, and the best meeting experience.
                     </p>
                     <button onClick={() => navigate('/auth')}
-                        style={{ background: 'linear-gradient(135deg,#38bdf8,#818cf8)', border: 'none', color: 'white', padding: '18px 48px', borderRadius: '14px', fontSize: '1.1rem', fontWeight: '700', cursor: 'pointer', boxShadow: '0 8px 40px rgba(56,189,248,0.4)', transition: 'all 0.25s' }}
+                        style={{ background: 'linear-gradient(135deg,#38bdf8,#818cf8)', border: 'none', color: 'white', padding: '18px 48px', borderRadius: '14px', fontSize: '1.1rem', fontWeight: '700', cursor: 'pointer', boxShadow: '0 8px 40px rgba(56,189,248,0.4)', transition: 'all 0.25s', fontFamily: 'inherit' }}
                         onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 16px 56px rgba(56,189,248,0.55)'; }}
                         onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 40px rgba(56,189,248,0.4)'; }}>
                         🚀 Launch ConnectX Free
@@ -465,7 +490,7 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* ── FOOTER ────────────────────────────────────────────── */}
+            {/* ── FOOTER ── */}
             <footer style={{ position: 'relative', zIndex: 1, padding: '40px 48px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
@@ -476,20 +501,21 @@ export default function LandingPage() {
                     </svg>
                     <span style={{ fontWeight: '700', background: 'linear-gradient(90deg,#38bdf8,#818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>ConnectX</span>
                 </div>
-                <p style={{ color: '#1e293b', fontSize: '13px', margin: 0 }}>© 2025 ConnectX. Built with ❤️ in India.</p>
+                <p style={{ color: '#475569', fontSize: '13px', margin: 0 }}>© 2025 ConnectX. Built with ❤️ in India.</p>
                 <div style={{ display: 'flex', gap: '24px' }}>
                     {[
                         { label: 'Privacy', url: 'https://www.termsfeed.com/live/privacy-policy' },
                         { label: 'Terms', url: 'https://www.termsfeed.com/live/terms-of-service' },
                         { label: 'Support', url: 'mailto:support@connectx.com' },
                     ].map(item => (
-                        <span key={item.label}
-                            style={{ color: '#334155', fontSize: '13px', cursor: 'pointer', transition: 'color 0.2s' }}
-                            onMouseEnter={e => e.target.style.color = '#38bdf8'}
-                            onMouseLeave={e => e.target.style.color = '#334155'}
-                            onClick={() => window.open(item.url, '_blank')}>
+                        <button
+                            key={item.label}
+                            style={footerLinkStyle}
+                            onMouseEnter={e => e.currentTarget.style.color = '#38bdf8'}
+                            onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
+                            onClick={() => openLink(item.url)}>
                             {item.label}
-                        </span>
+                        </button>
                     ))}
                 </div>
             </footer>
