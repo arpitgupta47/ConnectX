@@ -8,7 +8,7 @@ export default function LandingPage() {
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const [statsVisible, setStatsVisible] = useState(false);
     const statsRef = useRef(null);
-    const [counts, setCounts] = useState({ meetings: 0, users: 0, uptime: 0 });
+    const [activeModal, setActiveModal] = useState(null);
 
     useEffect(() => {
         const handleMouse = e => setMousePos({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight });
@@ -105,9 +105,9 @@ export default function LandingPage() {
     ];
 
     const testimonials = [
-        { name: 'Priya Sharma', role: 'Product Lead, Razorpay', text: 'ConnectX replaced our Zoom subscription. The AI Meeting Score alone saves us hours every week.', avatar: 'PS' },
-        { name: 'Arjun Mehta', role: 'CTO, TechSpark', text: 'The live polling feature is game-changing for standups. Our team engagement went up 3x.', avatar: 'AM' },
-        { name: 'Sneha Kapoor', role: 'Founder, EduFlow', text: 'Finally a video app built for real collaboration. The AI assistant during client calls is 🔥', avatar: 'SK' },
+        { name: 'Rohan Verma', role: 'Engineering Manager, Flipkart', text: 'ConnectX replaced our Zoom subscription. The AI Meeting Score alone saves us hours every week.', avatar: 'RV' },
+        { name: 'Kavya Nair', role: 'Senior Designer, Swiggy', text: 'The live polling feature is game-changing for standups. Our team engagement went up 3x.', avatar: 'KN' },
+        { name: 'Nikhil Bansal', role: 'Dev Advocate, Zepto', text: 'Finally a video app built for real collaboration. The AI assistant during client calls is 🔥', avatar: 'NB' },
     ];
 
     const parallaxX = (mousePos.x - 0.5) * 20;
@@ -378,7 +378,8 @@ export default function LandingPage() {
                                 onClick={() => navigate('/auth')}
                                 style={{ width: '100%', padding: '12px', borderRadius: '12px', background: p.highlight ? 'linear-gradient(135deg,#818cf8,#38bdf8)' : 'transparent', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit', border: p.highlight ? 'none' : `1px solid ${p.color}60` }}
                                 onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; }}
-                                onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}>
+                                onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+                                onClick={() => p.plan === 'Enterprise' ? setActiveModal('modal-contact') : navigate('/auth')}>
                                 {p.plan === 'Enterprise' ? 'Contact Us' : 'Get Started Free'}
                             </button>
                         </div>
@@ -401,11 +402,11 @@ export default function LandingPage() {
                             Get dedicated infrastructure, custom integrations, compliance tools, and a support team that actually picks up the phone.
                         </p>
                         <button
-                            onClick={() => openLink('mailto:enterprise@connectx.com')}
+                            onClick={() => setActiveModal('modal-contact')}
                             style={{ background: 'linear-gradient(135deg,#f472b6,#a78bfa)', border: 'none', color: 'white', padding: '14px 32px', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 8px 32px rgba(244,114,182,0.3)', transition: 'all 0.25s', fontFamily: 'inherit' }}
                             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 14px 40px rgba(244,114,182,0.45)'; }}
                             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(244,114,182,0.3)'; }}>
-                            Contact Sales →
+                            Contact Us →
                         </button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -501,24 +502,110 @@ export default function LandingPage() {
                     </svg>
                     <span style={{ fontWeight: '700', background: 'linear-gradient(90deg,#38bdf8,#818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>ConnectX</span>
                 </div>
-                <p style={{ color: '#475569', fontSize: '13px', margin: 0 }}>© 2025 ConnectX. Built with ❤️ in India.</p>
+                <p style={{ color: '#475569', fontSize: '13px', margin: 0 }}>© 2026 ConnectX. Built with ❤️ in India.</p>
                 <div style={{ display: 'flex', gap: '24px' }}>
                     {[
-                        { label: 'Privacy', url: 'https://www.termsfeed.com/live/privacy-policy' },
-                        { label: 'Terms', url: 'https://www.termsfeed.com/live/terms-of-service' },
-                        { label: 'Support', url: 'mailto:support@connectx.com' },
+                        { label: 'Privacy', action: 'modal-privacy' },
+                        { label: 'Terms', action: 'modal-terms' },
+                        { label: 'Support', url: 'mailto:guptaarpit.tech@gmail.com' },
                     ].map(item => (
                         <button
                             key={item.label}
                             style={footerLinkStyle}
                             onMouseEnter={e => e.currentTarget.style.color = '#38bdf8'}
                             onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
-                            onClick={() => openLink(item.url)}>
+                            onClick={() => item.url ? openLink(item.url) : setActiveModal(item.action)}>
                             {item.label}
                         </button>
                     ))}
                 </div>
             </footer>
+
+            {/* ── MODALS ── */}
+            {activeModal && (
+                <div
+                    onClick={() => setActiveModal(null)}
+                    style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{ background: '#0d1526', border: '1px solid rgba(56,189,248,0.2)', borderRadius: '24px', padding: '40px', maxWidth: '620px', width: '100%', maxHeight: '80vh', overflowY: 'auto', position: 'relative' }}>
+                        <button
+                            onClick={() => setActiveModal(null)}
+                            style={{ position: 'absolute', top: '18px', right: '20px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8', borderRadius: '8px', padding: '4px 10px', cursor: 'pointer', fontSize: '16px', lineHeight: 1, fontFamily: 'inherit' }}>
+                            ✕
+                        </button>
+
+                        {activeModal === 'modal-privacy' && (
+                            <>
+                                <h2 style={{ fontSize: '1.8rem', fontWeight: '800', marginBottom: '8px', background: 'linear-gradient(90deg,#38bdf8,#818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Privacy Policy</h2>
+                                <p style={{ color: '#475569', fontSize: '12px', marginBottom: '28px' }}>Last updated: January 1, 2026</p>
+                                {[
+                                    { title: '1. Information We Collect', body: 'We collect information you provide directly to us, such as when you create an account, start or join a meeting, or contact us for support. This includes your name, email address, and usage data related to meetings you host or attend on ConnectX.' },
+                                    { title: '2. How We Use Your Information', body: 'We use the information we collect to provide, maintain, and improve our services; to send you technical notices and support messages; to respond to your comments and questions; and to monitor and analyze usage trends.' },
+                                    { title: '3. Data Sharing', body: 'We do not sell your personal data to third parties. We may share your information with trusted service providers who assist us in operating our platform, subject to confidentiality agreements. We may also disclose information if required by law.' },
+                                    { title: '4. Cookies', body: 'ConnectX uses cookies and similar tracking technologies to track activity on our service and hold certain information. You can instruct your browser to refuse all cookies or to indicate when a cookie is being sent.' },
+                                    { title: '5. Data Security', body: 'We take reasonable measures to help protect your personal information from loss, theft, misuse and unauthorized access. All data transmitted through ConnectX is encrypted using industry-standard TLS protocols.' },
+                                    { title: '6. Your Rights', body: 'You have the right to access, update, or delete the personal information we hold about you. You can do this by contacting us at guptaarpit.tech@gmail.com.' },
+                                    { title: '7. Contact Us', body: 'If you have any questions about this Privacy Policy, please contact us at guptaarpit.tech@gmail.com.' },
+                                ].map((section, i) => (
+                                    <div key={i} style={{ marginBottom: '20px' }}>
+                                        <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#38bdf8', marginBottom: '8px' }}>{section.title}</h3>
+                                        <p style={{ color: '#94a3b8', fontSize: '13px', lineHeight: 1.8 }}>{section.body}</p>
+                                    </div>
+                                ))}
+                            </>
+                        )}
+
+                        {activeModal === 'modal-terms' && (
+                            <>
+                                <h2 style={{ fontSize: '1.8rem', fontWeight: '800', marginBottom: '8px', background: 'linear-gradient(90deg,#38bdf8,#818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Terms & Conditions</h2>
+                                <p style={{ color: '#475569', fontSize: '12px', marginBottom: '28px' }}>Last updated: January 1, 2026</p>
+                                {[
+                                    { title: '1. Acceptance of Terms', body: 'By accessing or using ConnectX, you agree to be bound by these Terms and Conditions. If you do not agree to these terms, please do not use our service.' },
+                                    { title: '2. Use of Service', body: 'ConnectX grants you a limited, non-exclusive, non-transferable license to use the service for your personal or business communication purposes. You may not use the service for any unlawful purpose or in any way that could damage or impair the service.' },
+                                    { title: '3. User Accounts', body: 'You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You agree to notify us immediately of any unauthorized use of your account.' },
+                                    { title: '4. Prohibited Conduct', body: 'You agree not to: (a) upload or transmit any harmful, offensive, or illegal content; (b) attempt to gain unauthorized access to any part of the service; (c) interfere with or disrupt the integrity or performance of the service; (d) collect data about other users without their consent.' },
+                                    { title: '5. Intellectual Property', body: 'The ConnectX name, logo, and all related content are the intellectual property of ConnectX and are protected by applicable laws. You may not use any of our trademarks or service marks without our prior written permission.' },
+                                    { title: '6. Limitation of Liability', body: 'ConnectX shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use the service. Our total liability shall not exceed the amount you paid us in the past 12 months.' },
+                                    { title: '7. Changes to Terms', body: 'We reserve the right to modify these terms at any time. We will notify users of significant changes via email or a prominent notice on our website. Continued use after changes constitutes acceptance of the new terms.' },
+                                    { title: '8. Contact', body: 'For any questions regarding these Terms, please contact us at guptaarpit.tech@gmail.com.' },
+                                ].map((section, i) => (
+                                    <div key={i} style={{ marginBottom: '20px' }}>
+                                        <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#818cf8', marginBottom: '8px' }}>{section.title}</h3>
+                                        <p style={{ color: '#94a3b8', fontSize: '13px', lineHeight: 1.8 }}>{section.body}</p>
+                                    </div>
+                                ))}
+                            </>
+                        )}
+
+                        {activeModal === 'modal-contact' && (
+                            <>
+                                <h2 style={{ fontSize: '1.8rem', fontWeight: '800', marginBottom: '8px', background: 'linear-gradient(90deg,#f472b6,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Contact Us</h2>
+                                <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: 1.7, marginBottom: '28px' }}>
+                                    Interested in ConnectX Enterprise? We'd love to hear from you. Reach out and our team will get back to you within 24 hours.
+                                </p>
+                                <div style={{ background: 'rgba(244,114,182,0.06)', border: '1px solid rgba(244,114,182,0.2)', borderRadius: '16px', padding: '28px', textAlign: 'center' }}>
+                                    <div style={{ fontSize: '2rem', marginBottom: '12px' }}>✉️</div>
+                                    <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '12px' }}>Mail us at</p>
+                                    <a
+                                        href="mailto:guptaarpit.tech@gmail.com"
+                                        style={{ color: '#f472b6', fontSize: '1.1rem', fontWeight: '700', textDecoration: 'none', letterSpacing: '0.3px' }}>
+                                        guptaarpit.tech@gmail.com
+                                    </a>
+                                    <p style={{ color: '#475569', fontSize: '12px', marginTop: '12px' }}>We respond within 24 hours on business days.</p>
+                                </div>
+                                <button
+                                    onClick={() => openLink('mailto:guptaarpit.tech@gmail.com')}
+                                    style={{ width: '100%', marginTop: '20px', padding: '14px', borderRadius: '12px', background: 'linear-gradient(135deg,#f472b6,#a78bfa)', border: 'none', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer', fontFamily: 'inherit', transition: 'opacity 0.2s' }}
+                                    onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                                    📧 Open Mail App
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
 
             <style>{`
                 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.2)} }
