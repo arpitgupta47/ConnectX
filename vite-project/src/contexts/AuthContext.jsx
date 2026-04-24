@@ -13,16 +13,20 @@ const client = axios.create({
   withCredentials: true
 });
 
-// Request Interceptor
+// Request Interceptor — attach token + session ID to every request
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
+  const sessionId = localStorage.getItem("sessionId");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  if (sessionId) {
+    config.headers["x-session-id"] = sessionId;
   }
   return config;
 });
 
-// Response Interceptor
+// Response Interceptor — handle session conflict (logged in elsewhere)
 client.interceptors.response.use(
   (res) => res,
   (error) => {
@@ -32,6 +36,12 @@ client.interceptors.response.use(
       data: error.response?.data,
       url: error.config?.url,
     });
+    // If kicked out due to another device login, clear local session
+    if (error.response?.data?.code === "SESSION_CONFLICT") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("sessionId");
+      window.location.href = "/auth?reason=session_conflict";
+    }
     return Promise.reject(error);
   }
 );
@@ -40,7 +50,6 @@ export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const navigate = useNavigate();
 
-  // Auto-fetch profile on mount if token exists
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token && !userData) {
@@ -48,7 +57,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // FETCH PROFILE
   const fetchProfile = async () => {
     try {
       const res = await client.get("/get_profile");
@@ -62,7 +70,6 @@ export const AuthProvider = ({ children }) => {
     return null;
   };
 
-  // REGISTER
   const handleRegister = async (name, username, password, email) => {
     try {
       const res = await client.post("/register", { name, username, password, email });
@@ -73,12 +80,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // LOGIN
   const handleLogin = async (username, password) => {
     try {
       const res = await client.post("/login", { username, password });
       if (res.status === httpStatus.OK) {
         localStorage.setItem("token", res.data.token);
+        localStorage.setItem("sessionId", res.data.activeSessionId);
         await fetchProfile();
         return res.data.message || "Login successful";
       }
@@ -88,7 +95,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // GOOGLE LOGIN
   const handleGoogleLogin = async () => {
     try {
       const result = await signInWithGoogle();
@@ -101,6 +107,7 @@ export const AuthProvider = ({ children }) => {
       });
       if (res.status === httpStatus.OK || res.status === httpStatus.CREATED) {
         localStorage.setItem("token", res.data.token);
+        localStorage.setItem("sessionId", res.data.activeSessionId);
         await fetchProfile();
         return res.data.message || "Google login successful";
       }
@@ -110,14 +117,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // LOGOUT
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("sessionId");
     setUserData(null);
     navigate("/auth");
   };
 
-  // HISTORY
   const getHistoryOfUser = async () => {
     try {
       const res = await client.get("/get_all_activity");
@@ -127,7 +133,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ADD HISTORY
   const addToUserHistory = async (meetingCode) => {
     try {
       const res = await client.post("/add_to_activity", { meeting_code: meetingCode });
