@@ -5,7 +5,6 @@ import crypto from "crypto";
 import { Meeting } from "../models/meeting.model.js";
 import nodemailer from "nodemailer";
 
-// ── Email transporter ─────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -14,7 +13,6 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-// ── LOGIN ─────────────────────────────────────────────────────────
 const login = async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password)
@@ -28,16 +26,18 @@ const login = async (req, res) => {
         if (!isPasswordCorrect)
             return res.status(httpStatus.UNAUTHORIZED).json({ message: "Invalid username or password" });
 
+        // Generate new token + sessionId — invalidates any other active device
         const token = crypto.randomBytes(20).toString("hex");
+        const activeSessionId = crypto.randomBytes(20).toString("hex");
         user.token = token;
+        user.activeSessionId = activeSessionId;
         await user.save();
-        return res.status(httpStatus.OK).json({ token, message: "Login successful" });
+        return res.status(httpStatus.OK).json({ token, activeSessionId, message: "Login successful" });
     } catch (e) {
         return res.status(500).json({ message: `Something went wrong: ${e}` });
     }
 };
 
-// ── REGISTER ──────────────────────────────────────────────────────
 const register = async (req, res) => {
     const { name, username, email, password } = req.body;
     if (!name || !username || !email || !password)
@@ -58,7 +58,6 @@ const register = async (req, res) => {
     }
 };
 
-// ── GOOGLE AUTH ───────────────────────────────────────────────────
 const googleAuth = async (req, res) => {
     const { name, email, googleId, avatar } = req.body;
     if (!email || !googleId)
@@ -66,15 +65,18 @@ const googleAuth = async (req, res) => {
     try {
         let user = await User.findOne({ email });
         if (user) {
-            // Existing user — just log them in
+            // Existing user — generate fresh session, kick out any other device
             const token = crypto.randomBytes(20).toString("hex");
+            const activeSessionId = crypto.randomBytes(20).toString("hex");
             user.token = token;
+            user.activeSessionId = activeSessionId;
             await user.save();
-            return res.status(httpStatus.OK).json({ token, message: "Google login successful" });
+            return res.status(httpStatus.OK).json({ token, activeSessionId, message: "Google login successful" });
         }
         // New user — auto-register
         const username = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "") + "_" + Math.floor(1000 + Math.random() * 9000);
         const token = crypto.randomBytes(20).toString("hex");
+        const activeSessionId = crypto.randomBytes(20).toString("hex");
         const newUser = new User({
             name: name || username,
             username,
@@ -82,16 +84,16 @@ const googleAuth = async (req, res) => {
             googleId,
             avatar,
             token,
+            activeSessionId,
             password: await bcrypt.hash(googleId + (process.env.JWT_SECRET || "secret"), 10),
         });
         await newUser.save();
-        return res.status(httpStatus.CREATED).json({ token, message: "Google account registered & logged in" });
+        return res.status(httpStatus.CREATED).json({ token, activeSessionId, message: "Google account registered & logged in" });
     } catch (e) {
         return res.status(500).json({ message: `Something went wrong: ${e}` });
     }
 };
 
-// ── SEND OTP ──────────────────────────────────────────────────────
 const sendOtp = async (req, res) => {
     const { email } = req.body;
     if (!email)
@@ -144,7 +146,6 @@ const sendOtp = async (req, res) => {
     }
 };
 
-// ── VERIFY OTP + RESET PASSWORD ───────────────────────────────────
 const resetPassword = async (req, res) => {
     const { email, otp, newPassword } = req.body;
     if (!email || !otp || !newPassword)
@@ -172,7 +173,6 @@ const resetPassword = async (req, res) => {
     }
 };
 
-// ── GET HISTORY ───────────────────────────────────────────────────
 const getUserHistory = async (req, res) => {
     const token = req.headers.authorization?.split(" ")[1] || req.query.token;
     if (!token)
@@ -188,7 +188,6 @@ const getUserHistory = async (req, res) => {
     }
 };
 
-// ── ADD HISTORY ───────────────────────────────────────────────────
 const addToHistory = async (req, res) => {
     const token = req.headers.authorization?.split(" ")[1];
     const { meeting_code } = req.body;
@@ -206,8 +205,6 @@ const addToHistory = async (req, res) => {
     }
 };
 
-
-// ── GET PROFILE ───────────────────────────────────────────────────
 const getProfile = async (req, res) => {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token)
