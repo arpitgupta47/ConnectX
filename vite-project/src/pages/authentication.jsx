@@ -1,5 +1,4 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
 import server from '../environment';
@@ -193,17 +192,14 @@ export default function Authentication() {
     const [fpNewPass, setFpNewPass] = useState('');
     const [fpShowPass, setFpShowPass] = useState(false);
 
-    const navigate = useNavigate();
-    const { handleRegister, handleLogin, handleGoogleLogin } = useContext(AuthContext);
-
     useEffect(() => {
         const saved = localStorage.getItem('cx_remember');
         if (saved) { setSiUsername(saved); setRememberMe(true); }
     }, []);
 
     const navigate = useNavigate();
-const location = useLocation();
-const { handleRegister, handleLogin, handleGoogleLogin } = useContext(AuthContext);
+    const location = useLocation();
+    const { handleRegister, handleLogin, handleGoogleLogin } = useContext(AuthContext);
 
 useEffect(() => {
     const saved = localStorage.getItem('cx_remember');
