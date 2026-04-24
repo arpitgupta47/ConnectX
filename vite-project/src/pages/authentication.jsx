@@ -1,5 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
 import server from '../environment';
 
@@ -199,6 +200,20 @@ export default function Authentication() {
         const saved = localStorage.getItem('cx_remember');
         if (saved) { setSiUsername(saved); setRememberMe(true); }
     }, []);
+
+    const navigate = useNavigate();
+const location = useLocation();
+const { handleRegister, handleLogin, handleGoogleLogin } = useContext(AuthContext);
+
+useEffect(() => {
+    const saved = localStorage.getItem('cx_remember');
+    if (saved) { setSiUsername(saved); setRememberMe(true); }
+
+    const params = new URLSearchParams(location.search);
+    if (params.get("reason") === "session_conflict") {
+        setError("Aapka account kisi aur device par login ho gaya hai. Dobara login karein.");
+    }
+}, []);
 
     const reset = () => { setError(''); setSuccess(''); };
     const goTo = (s) => { reset(); setScreen(s); };
