@@ -174,14 +174,8 @@ const resetPassword = async (req, res) => {
 };
 
 const getUserHistory = async (req, res) => {
-    const token = req.headers.authorization?.split(" ")[1] || req.query.token;
-    if (!token)
-        return res.status(401).json({ message: "No token provided" });
     try {
-        const user = await User.findOne({ token });
-        if (!user)
-            return res.status(404).json({ message: "User not found" });
-        const meetings = await Meeting.find({ user_id: user.username });
+        const meetings = await Meeting.find({ user_id: req.user.username });
         return res.status(200).json(meetings);
     } catch (e) {
         return res.status(500).json({ message: `Something went wrong: ${e}` });
@@ -189,15 +183,9 @@ const getUserHistory = async (req, res) => {
 };
 
 const addToHistory = async (req, res) => {
-    const token = req.headers.authorization?.split(" ")[1];
     const { meeting_code } = req.body;
-    if (!token)
-        return res.status(401).json({ message: "No token provided" });
     try {
-        const user = await User.findOne({ token });
-        if (!user)
-            return res.status(404).json({ message: "User not found" });
-        const newMeeting = new Meeting({ user_id: user.username, meetingCode: meeting_code });
+        const newMeeting = new Meeting({ user_id: req.user.username, meetingCode: meeting_code });
         await newMeeting.save();
         return res.status(httpStatus.CREATED).json({ message: "Added code to history" });
     } catch (e) {
@@ -206,13 +194,8 @@ const addToHistory = async (req, res) => {
 };
 
 const getProfile = async (req, res) => {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token)
-        return res.status(401).json({ message: "No token provided" });
     try {
-        const user = await User.findOne({ token });
-        if (!user)
-            return res.status(404).json({ message: "User not found" });
+        const user = req.user;
         return res.status(200).json({
             name: user.name,
             username: user.username,
