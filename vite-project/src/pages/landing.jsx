@@ -383,7 +383,7 @@ export default function LandingPage() {
 
             {/* ── PRICING ── */}
             <section id="pricing" style={{ position: 'relative', zIndex: 1, padding: isMobile ? '72px 20px' : '120px 48px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+                <div style={{ textAlign: 'center', marginBottom: '56px' }}>
                     <div style={{ display: 'inline-block', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.25)', borderRadius: '100px', padding: '6px 18px', fontSize: '12px', color: '#34d399', fontWeight: '600', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
                         Pricing
                     </div>
@@ -391,36 +391,165 @@ export default function LandingPage() {
                         Simple, transparent<br />
                         <span style={{ background: 'linear-gradient(90deg, #34d399, #38bdf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>pricing.</span>
                     </h2>
-                    <p style={{ color: '#475569', fontSize: '1rem', maxWidth: '420px', margin: '0 auto', lineHeight: 1.7 }}>No hidden fees. No credit card required to start.</p>
+                    <p style={{ color: '#475569', fontSize: '1rem', maxWidth: '420px', margin: '0 auto', lineHeight: 1.7 }}>No hidden fees. Cancel anytime. Pay securely with Razorpay.</p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '16px' }}>
+                        <img src="https://razorpay.com/favicon.ico" alt="Razorpay" style={{ width: '18px', height: '18px', borderRadius: '4px' }} onError={e => e.target.style.display='none'} />
+                        <span style={{ color: '#475569', fontSize: '12px', fontWeight: '500' }}>Secured by Razorpay · UPI · Cards · Net Banking · Wallets</span>
+                    </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', maxWidth: '900px', margin: '0 auto' }}>
+
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '20px', maxWidth: '1000px', margin: '0 auto' }}>
                     {[
-                        { plan: 'Free', price: '₹0', desc: 'Perfect for individuals and small teams.', features: ['Unlimited meetings', 'Up to 10 participants', 'HD video & audio', 'AI Assistant', 'Screen sharing'], color: '#38bdf8', highlight: false },
-                        { plan: 'Pro', price: '₹499/mo', desc: 'For growing teams that need more power.', features: ['Everything in Free', 'Up to 100 participants', 'AI Meeting Score', 'Live Polling', 'Meeting recordings', 'Priority support'], color: '#818cf8', highlight: true },
-                        { plan: 'Enterprise', price: 'Custom', desc: 'For large organizations with custom needs.', features: ['Everything in Pro', 'Unlimited participants', 'Custom integrations', 'Dedicated support', 'SLA guarantee', 'Admin dashboard'], color: '#f472b6', highlight: false },
+                        {
+                            plan: 'Free', price: '₹0', period: '', badge: null,
+                            desc: 'Perfect for individuals and small teams.',
+                            features: ['Unlimited meetings', 'Up to 10 participants', 'HD video & audio', 'AI Assistant', 'Screen sharing'],
+                            color: '#38bdf8', highlight: false,
+                            btnLabel: 'Get Started Free', btnAction: 'free',
+                            amount: 0,
+                        },
+                        {
+                            plan: 'Pro', price: '₹499', period: '/mo', badge: '⭐ Most Popular',
+                            desc: 'For growing teams that need more power.',
+                            features: ['Everything in Free', 'Up to 100 participants', 'AI Meeting Score', 'Live Polling', 'Meeting recordings', 'Priority support'],
+                            color: '#818cf8', highlight: true,
+                            btnLabel: 'Subscribe with Razorpay', btnAction: 'razorpay',
+                            amount: 49900,
+                        },
+                        {
+                            plan: 'Enterprise', price: 'Custom', period: '', badge: null,
+                            desc: 'For large organizations with custom needs.',
+                            features: ['Everything in Pro', 'Unlimited participants', 'Custom integrations', 'Dedicated support', 'SLA guarantee', 'Admin dashboard'],
+                            color: '#f472b6', highlight: false,
+                            btnLabel: 'Contact Us', btnAction: 'contact',
+                            amount: 0,
+                        },
                     ].map((p, i) => (
-                        <div key={i}
-                            style={{ background: p.highlight ? 'rgba(129,140,248,0.08)' : 'rgba(255,255,255,0.02)', border: `1px solid ${p.highlight ? 'rgba(129,140,248,0.4)' : 'rgba(255,255,255,0.07)'}`, borderRadius: '20px', padding: '28px 24px', position: 'relative', transition: 'all 0.3s' }}>
-                            {p.highlight && (
-                                <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#818cf8,#38bdf8)', borderRadius: '100px', padding: '4px 16px', fontSize: '11px', fontWeight: '700', color: 'white', whiteSpace: 'nowrap' }}>⭐ Most Popular</div>
+                        <div key={i} style={{
+                            background: p.highlight ? 'rgba(129,140,248,0.07)' : 'rgba(255,255,255,0.02)',
+                            border: `1px solid ${p.highlight ? 'rgba(129,140,248,0.45)' : 'rgba(255,255,255,0.07)'}`,
+                            borderRadius: '22px', padding: '32px 26px', position: 'relative',
+                            transition: 'all 0.3s', display: 'flex', flexDirection: 'column',
+                            boxShadow: p.highlight ? '0 0 60px rgba(129,140,248,0.1)' : 'none',
+                        }}
+                            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = `${p.color}70`; }}
+                            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = p.highlight ? 'rgba(129,140,248,0.45)' : 'rgba(255,255,255,0.07)'; }}
+                        >
+                            {p.badge && (
+                                <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#818cf8,#38bdf8)', borderRadius: '100px', padding: '5px 18px', fontSize: '11px', fontWeight: '800', color: 'white', whiteSpace: 'nowrap', boxShadow: '0 4px 20px rgba(129,140,248,0.5)' }}>{p.badge}</div>
                             )}
-                            <div style={{ fontSize: '13px', fontWeight: '600', color: p.color, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>{p.plan}</div>
-                            <div style={{ fontSize: '2.2rem', fontWeight: '800', color: 'white', marginBottom: '6px', letterSpacing: '-1px' }}>{p.price}</div>
-                            <div style={{ color: '#475569', fontSize: '13px', marginBottom: '20px', lineHeight: 1.6 }}>{p.desc}</div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+
+                            <div style={{ fontSize: '12px', fontWeight: '700', color: p.color, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1.5px' }}>{p.plan}</div>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '4px' }}>
+                                <span style={{ fontSize: p.price === 'Custom' ? '2.6rem' : '2.8rem', fontWeight: '900', color: 'white', letterSpacing: '-2px', lineHeight: 1 }}>{p.price}</span>
+                                {p.period && <span style={{ color: '#475569', fontSize: '14px', fontWeight: '500' }}>{p.period}</span>}
+                            </div>
+                            {p.plan === 'Pro' && <div style={{ color: '#475569', fontSize: '11px', marginBottom: '4px' }}>Billed monthly · Cancel anytime</div>}
+                            <div style={{ color: '#475569', fontSize: '13px', marginBottom: '24px', lineHeight: 1.6 }}>{p.desc}</div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '11px', marginBottom: '28px', flex: 1 }}>
                                 {p.features.map((f, j) => (
                                     <div key={j} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#94a3b8' }}>
-                                        <span style={{ color: p.color, fontWeight: '700', fontSize: '15px' }}>✓</span> {f}
+                                        <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: `${p.color}20`, border: `1px solid ${p.color}50`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <span style={{ color: p.color, fontWeight: '800', fontSize: '11px' }}>✓</span>
+                                        </div>
+                                        {f}
                                     </div>
                                 ))}
                             </div>
+
                             <button
-                                style={{ width: '100%', padding: '12px', borderRadius: '12px', background: p.highlight ? 'linear-gradient(135deg,#818cf8,#38bdf8)' : 'transparent', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit', border: p.highlight ? 'none' : `1px solid ${p.color}60` }}
-                                onClick={() => p.plan === 'Enterprise' ? setActiveModal('modal-contact') : navigate('/auth')}>
-                                {p.plan === 'Enterprise' ? 'Contact Us' : 'Get Started Free'}
+                                style={{
+                                    width: '100%', padding: '13px', borderRadius: '12px',
+                                    background: p.highlight ? 'linear-gradient(135deg,#818cf8,#38bdf8)' : 'transparent',
+                                    color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer',
+                                    transition: 'all 0.2s', fontFamily: 'inherit',
+                                    border: p.highlight ? 'none' : `1px solid ${p.color}50`,
+                                    boxShadow: p.highlight ? '0 6px 24px rgba(129,140,248,0.4)' : 'none',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; e.currentTarget.style.transform = 'scale(1.02)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'scale(1)'; }}
+                                onClick={() => {
+                                    if (p.btnAction === 'free') { navigate('/auth'); return; }
+                                    if (p.btnAction === 'contact') { setActiveModal('modal-contact'); return; }
+                                    if (p.btnAction === 'razorpay') {
+                                        const script = document.createElement('script');
+                                        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+                                        script.onload = () => {
+                                            const options = {
+                                                key: 'rzp_live_YourKeyHere',
+                                                amount: p.amount,
+                                                currency: 'INR',
+                                                name: 'ConnectX',
+                                                description: 'ConnectX Pro — Monthly Subscription',
+                                                image: 'https://connectx-5jkx.onrender.com/logo3.png',
+                                                handler: function (response) {
+                                                    setActiveModal('modal-payment-success');
+                                                },
+                                                prefill: {
+                                                    name: '',
+                                                    email: '',
+                                                    contact: '',
+                                                },
+                                                notes: { plan: 'Pro', source: 'ConnectX Landing Page' },
+                                                theme: { color: '#818cf8' },
+                                                modal: {
+                                                    ondismiss: function () { console.log('Payment dismissed'); }
+                                                }
+                                            };
+                                            const rzp = new window.Razorpay(options);
+                                            rzp.on('payment.failed', function (response) {
+                                                alert('Payment failed. Please try again.');
+                                            });
+                                            rzp.open();
+                                        };
+                                        document.body.appendChild(script);
+                                    }
+                                }}
+                            >
+                                {p.btnAction === 'razorpay' && (
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white" opacity="0.9">
+                                        <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" />
+                                    </svg>
+                                )}
+                                {p.btnLabel}
                             </button>
+
+                            {p.btnAction === 'razorpay' && (
+                                <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                        {['UPI', 'GPay', 'PhonePe', 'Cards', 'NetBanking'].map(m => (
+                                            <span key={m} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px', padding: '2px 7px', fontSize: '10px', color: '#475569', fontWeight: '600' }}>{m}</span>
+                                        ))}
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '8px' }}>
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="#34d399"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+                                        <span style={{ color: '#334155', fontSize: '10px' }}>256-bit SSL secured · Powered by Razorpay</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ))}
+                </div>
+
+                {/* UPI / GPay Banner */}
+                <div style={{ maxWidth: '1000px', margin: '32px auto 0', background: 'rgba(52,211,153,0.04)', border: '1px solid rgba(52,211,153,0.15)', borderRadius: '16px', padding: '20px 28px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <div style={{ fontSize: '1.6rem' }}>⚡</div>
+                    <div>
+                        <div style={{ color: 'white', fontWeight: '700', fontSize: '14px', marginBottom: '2px' }}>Instant activation after payment</div>
+                        <div style={{ color: '#475569', fontSize: '12px' }}>Pay via UPI, Google Pay, PhonePe, Paytm, Credit/Debit card, or Net Banking</div>
+                    </div>
+                    <div style={{ marginLeft: isMobile ? '0' : 'auto', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {[
+                            { label: 'UPI', bg: '#1a1a2e', color: '#818cf8' },
+                            { label: 'GPay', bg: '#1a1a2e', color: '#34d399' },
+                            { label: 'PhonePe', bg: '#1a1a2e', color: '#a78bfa' },
+                            { label: 'Paytm', bg: '#1a1a2e', color: '#38bdf8' },
+                        ].map(m => (
+                            <div key={m.label} style={{ background: `rgba(255,255,255,0.04)`, border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: '700', color: m.color }}>{m.label}</div>
+                        ))}
+                    </div>
                 </div>
             </section>
 
@@ -598,8 +727,7 @@ export default function LandingPage() {
                             </>
                         )}
 
-                        {activeModal === 'modal-contact' && (
-                            <>
+                        {activeModal === 'modal-contact' && (                            <>
                                 <h2 style={{ fontSize: '1.6rem', fontWeight: '800', marginBottom: '8px', background: 'linear-gradient(90deg,#f472b6,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Contact Us</h2>
                                 <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: 1.7, marginBottom: '24px' }}>
                                     Interested in ConnectX Enterprise? We'd love to hear from you. Reach out and our team will get back to you within 24 hours.
@@ -618,6 +746,28 @@ export default function LandingPage() {
                                     📧 Open Mail App
                                 </button>
                             </>
+                        )}
+
+                        {activeModal === 'modal-payment-success' && (
+                            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                                <div style={{ width: '80px', height: '80px', background: 'linear-gradient(135deg,#34d399,#38bdf8)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', margin: '0 auto 20px' }}>✓</div>
+                                <h2 style={{ fontSize: '1.6rem', fontWeight: '800', marginBottom: '8px', background: 'linear-gradient(90deg,#34d399,#38bdf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Payment Successful!</h2>
+                                <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: 1.7, marginBottom: '24px' }}>
+                                    Welcome to ConnectX Pro! 🎉<br />
+                                    Your account has been upgraded. Check your email for the invoice.
+                                </p>
+                                <div style={{ background: 'rgba(52,211,153,0.06)', border: '1px solid rgba(52,211,153,0.2)', borderRadius: '14px', padding: '18px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    {['Up to 100 participants', 'AI Meeting Score', 'Live Polling', 'Meeting recordings', 'Priority support'].map((f, i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#94a3b8' }}>
+                                            <span style={{ color: '#34d399', fontWeight: '800' }}>✓</span> {f}
+                                        </div>
+                                    ))}
+                                </div>
+                                <button onClick={() => { setActiveModal(null); navigate('/auth'); }}
+                                    style={{ width: '100%', padding: '14px', borderRadius: '12px', background: 'linear-gradient(135deg,#34d399,#38bdf8)', border: 'none', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                    🚀 Start Using ConnectX Pro
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>
