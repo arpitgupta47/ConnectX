@@ -13,30 +13,19 @@ const client = axios.create({
   withCredentials: true
 });
 
-// Request Interceptor — attach token + session ID to every request
+// Attach token + session ID to every request
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   const sessionId = localStorage.getItem("sessionId");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  if (sessionId) {
-    config.headers["x-session-id"] = sessionId;
-  }
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (sessionId) config.headers["x-session-id"] = sessionId;
   return config;
 });
 
-// Response Interceptor — handle session conflict (logged in elsewhere)
+// Handle session conflict
 client.interceptors.response.use(
   (res) => res,
   (error) => {
-    console.log("❌ API ERROR:", {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-      url: error.config?.url,
-    });
-    // If kicked out due to another device login, clear local session
     if (error.response?.data?.code === "SESSION_CONFLICT") {
       localStorage.removeItem("token");
       localStorage.removeItem("sessionId");
@@ -46,8 +35,40 @@ client.interceptors.response.use(
   }
 );
 
+// ── Plan feature map ──────────────────────────────────────────────
+export const PLAN_FEATURES = {
+  free: {
+    maxParticipants: 10,
+    aiAssistant: true,
+    aiMeetingScore: false,
+    livePolling: false,
+    recordings: false,
+    prioritySupport: false,
+    unlimitedParticipants: false,
+  },
+  pro: {
+    maxParticipants: 100,
+    aiAssistant: true,
+    aiMeetingScore: true,
+    livePolling: true,
+    recordings: true,
+    prioritySupport: true,
+    unlimitedParticipants: false,
+  },
+  enterprise: {
+    maxParticipants: Infinity,
+    aiAssistant: true,
+    aiMeetingScore: true,
+    livePolling: true,
+    recordings: true,
+    prioritySupport: true,
+    unlimitedParticipants: true,
+  },
+};
+
 export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
+  const [userPlan, setUserPlan] = useState('free');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -62,6 +83,7 @@ export const AuthProvider = ({ children }) => {
       const res = await client.get("/get_profile");
       if (res.status === 200) {
         setUserData(res.data);
+        setUserPlan(res.data.plan || 'free');
         return res.data;
       }
     } catch (err) {
@@ -70,14 +92,18 @@ export const AuthProvider = ({ children }) => {
     return null;
   };
 
+  // Check if user has access to a feature
+  const hasFeature = (feature) => {
+    const plan = userPlan || 'free';
+    return PLAN_FEATURES[plan]?.[feature] ?? false;
+  };
+
   const handleRegister = async (name, username, password, email) => {
     try {
       const res = await client.post("/register", { name, username, password, email });
       if (res.status === httpStatus.CREATED) return res.data.message;
       throw new Error(res.data?.message || "Register failed");
-    } catch (err) {
-      throw err;
-    }
+    } catch (err) { throw err; }
   };
 
   const handleLogin = async (username, password) => {
@@ -90,9 +116,7 @@ export const AuthProvider = ({ children }) => {
         return res.data.message || "Login successful";
       }
       throw new Error(res.data?.message || "Login failed");
-    } catch (err) {
-      throw err;
-    }
+    } catch (err) { throw err; }
   };
 
   const handleGoogleLogin = async () => {
@@ -100,10 +124,7 @@ export const AuthProvider = ({ children }) => {
       const result = await signInWithGoogle();
       const user = result.user;
       const res = await client.post("/google-auth", {
-        name: user.displayName,
-        email: user.email,
-        googleId: user.uid,
-        avatar: user.photoURL,
+        name: user.displayName, email: user.email, googleId: user.uid, avatar: user.photoURL,
       });
       if (res.status === httpStatus.OK || res.status === httpStatus.CREATED) {
         localStorage.setItem("token", res.data.token);
@@ -112,50 +133,57 @@ export const AuthProvider = ({ children }) => {
         return res.data.message || "Google login successful";
       }
       throw new Error(res.data?.message || "Google login failed");
-    } catch (err) {
-      throw err;
-    }
+    } catch (err) { throw err; }
   };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("sessionId");
     setUserData(null);
+    setUserPlan('free');
     navigate("/auth");
+  };
+
+  // Called after successful Razorpay payment
+  const upgradePlan = async (razorpayPaymentId, razorpayOrderId, razorpaySignature, plan) => {
+    try {
+      const res = await client.post("/upgrade-plan", {
+        razorpayPaymentId, razorpayOrderId, razorpaySignature, plan
+      });
+      if (res.status === 200) {
+        setUserPlan(res.data.plan);
+        setUserData(prev => prev ? { ...prev, plan: res.data.plan, planExpiresAt: res.data.planExpiresAt } : prev);
+        return res.data;
+      }
+    } catch (err) {
+      throw new Error(err.response?.data?.message || "Plan upgrade failed");
+    }
   };
 
   const getHistoryOfUser = async () => {
     try {
       const res = await client.get("/get_all_activity");
       return res.data;
-    } catch (err) {
-      throw err;
-    }
+    } catch (err) { throw err; }
   };
 
   const addToUserHistory = async (meetingCode) => {
     try {
       const res = await client.post("/add_to_activity", { meeting_code: meetingCode });
       return res.data;
-    } catch (err) {
-      throw err;
-    }
+    } catch (err) { throw err; }
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        userData,
-        setUserData,
-        fetchProfile,
-        handleRegister,
-        handleLogin,
-        handleGoogleLogin,
-        handleLogout,
-        getHistoryOfUser,
-        addToUserHistory,
-      }}
-    >
+    <AuthContext.Provider value={{
+      userData, setUserData,
+      userPlan,
+      hasFeature,
+      fetchProfile,
+      handleRegister, handleLogin, handleGoogleLogin, handleLogout,
+      getHistoryOfUser, addToUserHistory,
+      upgradePlan,
+    }}>
       {children}
     </AuthContext.Provider>
   );
