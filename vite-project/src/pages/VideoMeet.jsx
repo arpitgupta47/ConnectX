@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react'
+import React, { useEffect, useRef, useState, useCallback, useContext } from 'react'
 import io from "socket.io-client";
 import { Badge, IconButton } from '@mui/material';
 import VideocamIcon from '@mui/icons-material/Videocam';
@@ -13,6 +13,7 @@ import ChatIcon from '@mui/icons-material/Chat';
 import PeopleIcon from '@mui/icons-material/People';
 import server from '../environment';
 import UserMenu from '../components/UserMenu';
+import { AuthContext, PLAN_FEATURES } from '../contexts/AuthContext';
 
 const server_url = server;
 
@@ -243,11 +244,48 @@ function ParticipantsPanel({ isOpen, onClose, selfName, selfCam, selfMic, isHost
     );
 }
 
+// ── Upgrade Prompt Modal ───────────────────────────────────────────
+function UpgradePrompt({ feature, onClose }) {
+    const featureLabels = {
+        aiMeetingScore: { title: 'AI Meeting Score', desc: 'Get AI-powered analytics after every call — engagement, participation & productivity scores.', icon: '📊' },
+        livePolling:    { title: 'Live Polling',     desc: 'Launch instant polls mid-meeting with real-time results.', icon: '🗳️' },
+        recordings:     { title: 'Meeting Recordings', desc: 'Record and replay your meetings anytime.', icon: '🎥' },
+        maxParticipants:{ title: 'More Participants', desc: 'Free plan is limited to 10 participants. Upgrade Pro for up to 100.', icon: '👥' },
+    };
+    const info = featureLabels[feature] || { title: 'Pro Feature', desc: 'Upgrade to Pro to unlock this feature.', icon: '⭐' };
+    return (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <div style={{ background: 'rgba(10,10,22,0.98)', border: '1px solid rgba(129,140,248,0.4)', borderRadius: '24px', padding: '36px 32px', maxWidth: '380px', width: '100%', textAlign: 'center', boxShadow: '0 32px 80px rgba(0,0,0,0.8)' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '16px' }}>{info.icon}</div>
+                <div style={{ display: 'inline-block', background: 'rgba(129,140,248,0.15)', border: '1px solid rgba(129,140,248,0.3)', borderRadius: '100px', padding: '4px 14px', fontSize: '11px', color: '#818cf8', fontWeight: '700', marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>⭐ Pro Feature</div>
+                <h3 style={{ color: 'white', fontWeight: '800', fontSize: '1.3rem', marginBottom: '10px' }}>{info.title}</h3>
+                <p style={{ color: '#64748b', fontSize: '14px', lineHeight: 1.7, marginBottom: '24px' }}>{info.desc}</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <button
+                        onClick={() => window.open('/#pricing', '_blank')}
+                        style={{ width: '100%', padding: '13px', borderRadius: '12px', background: 'linear-gradient(135deg,#818cf8,#38bdf8)', border: 'none', color: 'white', fontWeight: '700', fontSize: '14px', cursor: 'pointer', boxShadow: '0 6px 24px rgba(129,140,248,0.4)' }}>
+                        🚀 Upgrade to Pro — ₹499/mo
+                    </button>
+                    <button
+                        onClick={onClose}
+                        style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#64748b', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>
+                        Maybe Later
+                    </button>
+                </div>
+                <p style={{ color: '#334155', fontSize: '11px', marginTop: '14px' }}>Cancel anytime · Secured by Razorpay</p>
+            </div>
+        </div>
+    );
+}
+
 export default function VideoMeetComponent() {
     const socketRef = useRef();
     const socketIdRef = useRef();
     const localVideoref = useRef();
     const connectionsRef = useRef({});
+
+    const { hasFeature, userPlan } = useContext(AuthContext);
+    const [upgradePromptFeature, setUpgradePromptFeature] = useState(null); // which feature was blocked
 
     const [videoAvailable, setVideoAvailable] = useState(true);
     const [audioAvailable, setAudioAvailable] = useState(true);
@@ -496,6 +534,15 @@ export default function VideoMeetComponent() {
             socketRef.current.on('user-joined', (id, clients) => {
                 if (id === socketIdRef.current) { setIsWaiting(false); setIsHost(clients.length === 1); playJoinSound(); }
                 setAdmitRequests(prev => prev.filter(r => r.socketId !== id));
+
+                // ── Participant limit enforcement ─────────────────────
+                const maxAllowed = PLAN_FEATURES[userPlan]?.maxParticipants ?? 10;
+                if (clients.length > maxAllowed && id !== socketIdRef.current) {
+                    // Host sees upgrade prompt if room exceeds their plan limit
+                    if (isHost) setUpgradePromptFeature('maxParticipants');
+                    return;
+                }
+
                 const iAmNewUser = (id === socketIdRef.current);
                 const newUserId = id;
                 if (iAmNewUser) {
@@ -787,8 +834,26 @@ export default function VideoMeetComponent() {
             {/* CONTROL BAR */}
             <div className={styles.buttonContainers}>
                 <button onClick={() => setShowAI(p => !p)} title="AI Meeting Assistant" style={{ background: showAI ? 'linear-gradient(135deg,#667eea,#764ba2)' : 'rgba(102,126,234,0.15)', border: `1px solid ${showAI ? '#667eea' : 'rgba(102,126,234,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>🤖 <span className={styles.btnLabel}>AI</span></button>
-                <button onClick={() => setShowPollPanel(p => !p)} title="Live Polls" style={{ background: showPollPanel ? 'linear-gradient(135deg,#f59e0b,#ef4444)' : 'rgba(245,158,11,0.15)', border: `1px solid ${showPollPanel ? '#f59e0b' : 'rgba(245,158,11,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap', position: 'relative' }}>🗳️ <span className={styles.btnLabel}>Poll</span>{polls.filter(p => !p.ended).length > 0 && <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: 'white', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' }}>{polls.filter(p => !p.ended).length}</span>}</button>
-                <button onClick={generateMeetingScore} title="AI Meeting Score" style={{ background: showScorePanel ? 'linear-gradient(135deg,#06b6d4,#667eea)' : 'rgba(6,182,212,0.15)', border: `1px solid ${showScorePanel ? '#06b6d4' : 'rgba(6,182,212,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>📊 <span className={styles.btnLabel}>Score</span></button>
+
+                {/* POLL BUTTON — Pro only */}
+                <button
+                    onClick={() => { if (!hasFeature('livePolling')) { setUpgradePromptFeature('livePolling'); return; } setShowPollPanel(p => !p); }}
+                    title={hasFeature('livePolling') ? 'Live Polls' : '🔒 Pro Feature — Live Polls'}
+                    style={{ background: showPollPanel ? 'linear-gradient(135deg,#f59e0b,#ef4444)' : 'rgba(245,158,11,0.15)', border: `1px solid ${showPollPanel ? '#f59e0b' : 'rgba(245,158,11,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap', position: 'relative', opacity: hasFeature('livePolling') ? 1 : 0.65 }}>
+                    🗳️ <span className={styles.btnLabel}>Poll</span>
+                    {!hasFeature('livePolling') && <span style={{ fontSize: '10px', marginLeft: '2px' }}>🔒</span>}
+                    {hasFeature('livePolling') && polls.filter(p => !p.ended).length > 0 && <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: 'white', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' }}>{polls.filter(p => !p.ended).length}</span>}
+                </button>
+
+                {/* SCORE BUTTON — Pro only */}
+                <button
+                    onClick={() => { if (!hasFeature('aiMeetingScore')) { setUpgradePromptFeature('aiMeetingScore'); return; } generateMeetingScore(); }}
+                    title={hasFeature('aiMeetingScore') ? 'AI Meeting Score' : '🔒 Pro Feature — AI Meeting Score'}
+                    style={{ background: showScorePanel ? 'linear-gradient(135deg,#06b6d4,#667eea)' : 'rgba(6,182,212,0.15)', border: `1px solid ${showScorePanel ? '#06b6d4' : 'rgba(6,182,212,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap', opacity: hasFeature('aiMeetingScore') ? 1 : 0.65 }}>
+                    📊 <span className={styles.btnLabel}>Score</span>
+                    {!hasFeature('aiMeetingScore') && <span style={{ fontSize: '10px', marginLeft: '2px' }}>🔒</span>}
+                </button>
+
                 {/* PARTICIPANTS BUTTON */}
                 <button onClick={() => setShowParticipants(p => !p)} title="Participants" style={{ background: showParticipants ? 'linear-gradient(135deg,#06b6d4,#0284c7)' : 'rgba(6,182,212,0.15)', border: `1px solid ${showParticipants ? '#06b6d4' : 'rgba(6,182,212,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap', position: 'relative' }}>
                     👥 {totalParticipants}
@@ -810,6 +875,14 @@ export default function VideoMeetComponent() {
                 @keyframes bounce{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
                 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
             `}</style>
+
+            {/* ── Upgrade Prompt Modal ── */}
+            {upgradePromptFeature && (
+                <UpgradePrompt
+                    feature={upgradePromptFeature}
+                    onClose={() => setUpgradePromptFeature(null)}
+                />
+            )}
         </div>
     );
 }
