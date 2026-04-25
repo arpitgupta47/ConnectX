@@ -15,7 +15,6 @@ import server from '../environment';
 import UserMenu from '../components/UserMenu';
 
 const server_url = server;
-var connections = {};
 
 const peerConfig = {
     iceServers: [
@@ -248,6 +247,7 @@ export default function VideoMeetComponent() {
     const socketRef = useRef();
     const socketIdRef = useRef();
     const localVideoref = useRef();
+    const connectionsRef = useRef({});
 
     const [videoAvailable, setVideoAvailable] = useState(true);
     const [audioAvailable, setAudioAvailable] = useState(true);
@@ -317,10 +317,20 @@ export default function VideoMeetComponent() {
 
     // Broadcast my media state to all peers whenever it changes
     useEffect(() => {
-        if (socketRef.current && socketIdRef.current) {
+        if (socketRef.current?.connected && socketIdRef.current) {
             socketRef.current.emit('media-state-update', { camOn: video, micOn: audio });
         }
     }, [video, audio]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            try { window.localStream?.getTracks().forEach(t => t.stop()); } catch (e) { }
+            for (let id in connectionsRef.current) { try { connectionsRef.current[id].close(); } catch (e) { } }
+            connectionsRef.current = {};
+            socketRef.current?.disconnect();
+        };
+    }, []);
 
     const getPermissions = async () => {
         try { const v = await navigator.mediaDevices.getUserMedia({ video: true }); setVideoAvailable(true); v.getTracks().forEach(t => t.stop()); } catch { setVideoAvailable(false); }
@@ -348,9 +358,9 @@ export default function VideoMeetComponent() {
     };
 
     const updateTracksForAllPeers = (newStream) => {
-        for (let id in connections) {
+        for (let id in connectionsRef.current) {
             if (id === socketIdRef.current) continue;
-            const pc = connections[id]; const senders = pc.getSenders();
+            const pc = connectionsRef.current[id]; const senders = pc.getSenders();
             newStream.getTracks().forEach(track => {
                 const existingSender = senders.find(s => s.track && s.track.kind === track.kind);
                 if (existingSender) { existingSender.replaceTrack(track).catch(e => console.log("replaceTrack error:", e)); }
@@ -378,9 +388,9 @@ export default function VideoMeetComponent() {
     const gotMessageFromServer = (fromId, msg) => {
         const signal = JSON.parse(msg);
         if (fromId === socketIdRef.current) return;
-        if (!connections[fromId]) {
+        if (!connectionsRef.current[fromId]) {
             const pc = new RTCPeerConnection(peerConfig);
-            connections[fromId] = pc;
+            connectionsRef.current[fromId] = pc;
             pc.onicecandidate = (event) => { if (event.candidate) socketRef.current.emit('signal', fromId, JSON.stringify({ ice: event.candidate })); };
             pc.ontrack = (event) => {
                 const remoteStream = event.streams[0]; if (!remoteStream) return;
@@ -391,13 +401,13 @@ export default function VideoMeetComponent() {
             streamToSend.getTracks().forEach(track => pc.addTrack(track, streamToSend));
         }
         if (signal.sdp) {
-            connections[fromId].setRemoteDescription(new RTCSessionDescription(signal.sdp)).then(() => {
+            connectionsRef.current[fromId].setRemoteDescription(new RTCSessionDescription(signal.sdp)).then(() => {
                 if (signal.sdp.type === 'offer') {
-                    connections[fromId].createAnswer().then(d => connections[fromId].setLocalDescription(d)).then(() => socketRef.current.emit('signal', fromId, JSON.stringify({ sdp: connections[fromId].localDescription }))).catch(e => console.log("answer error:", e));
+                    connectionsRef.current[fromId].createAnswer().then(d => connectionsRef.current[fromId].setLocalDescription(d)).then(() => socketRef.current.emit('signal', fromId, JSON.stringify({ sdp: connectionsRef.current[fromId].localDescription }))).catch(e => console.log("answer error:", e));
                 }
             }).catch(e => console.log("setRemoteDescription error:", e));
         }
-        if (signal.ice) { connections[fromId]?.addIceCandidate(new RTCIceCandidate(signal.ice)).catch(e => console.log("addIceCandidate error:", e)); }
+        if (signal.ice) { connectionsRef.current[fromId]?.addIceCandidate(new RTCIceCandidate(signal.ice)).catch(e => console.log("addIceCandidate error:", e)); }
     };
 
     // ── HOST CONTROLS ─────────────────────────────────────────────
@@ -474,7 +484,7 @@ export default function VideoMeetComponent() {
             socketRef.current.emit('join-call', { path: roomId, name: username });
             socketRef.current.on('chat-message', addMessage);
             socketRef.current.on('user-left', (id) => {
-                if (connections[id]) { connections[id].close(); delete connections[id]; }
+                if (connectionsRef.current[id]) { connectionsRef.current[id].close(); delete connectionsRef.current[id]; }
                 setVideos(prev => prev.filter(v => v.socketId !== id));
                 setParticipantMediaState(prev => { const n = { ...prev }; delete n[id]; return n; });
                 delete participantNames.current[id]; playLeaveSound();
@@ -491,9 +501,9 @@ export default function VideoMeetComponent() {
                 if (iAmNewUser) {
                     clients.forEach(clientId => {
                         if (clientId === socketIdRef.current) return;
-                        if (connections[clientId]) return;
+                        if (connectionsRef.current[clientId]) return;
                         const pc = new RTCPeerConnection(peerConfig);
-                        connections[clientId] = pc;
+                        connectionsRef.current[clientId] = pc;
                         pc.onicecandidate = (event) => { if (event.candidate) socketRef.current.emit('signal', clientId, JSON.stringify({ ice: event.candidate })); };
                         pc.ontrack = (event) => {
                             const remoteStream = event.streams[0]; if (!remoteStream) return;
@@ -508,9 +518,9 @@ export default function VideoMeetComponent() {
                     // broadcast my initial media state
                     socketRef.current.emit('media-state-update', { camOn: video, micOn: audio });
                 } else {
-                    if (connections[newUserId]) return;
+                    if (connectionsRef.current[newUserId]) return;
                     const pc = new RTCPeerConnection(peerConfig);
-                    connections[newUserId] = pc;
+                    connectionsRef.current[newUserId] = pc;
                     pc.onicecandidate = (event) => { if (event.candidate) socketRef.current.emit('signal', newUserId, JSON.stringify({ ice: event.candidate })); };
                     pc.ontrack = (event) => {
                         const remoteStream = event.streams[0]; if (!remoteStream) return;
@@ -530,8 +540,8 @@ export default function VideoMeetComponent() {
     const handleScreen = () => setScreen(p => !p);
     const handleEndCall = () => {
         try { localVideoref.current?.srcObject?.getTracks().forEach(t => t.stop()); window.localStream?.getTracks().forEach(t => t.stop()); } catch (e) { }
-        for (let id in connections) { try { connections[id].close(); } catch (e) { } }
-        connections = {}; socketRef.current?.disconnect(); window.location.href = "/";
+        for (let id in connectionsRef.current) { try { connectionsRef.current[id].close(); } catch (e) { } }
+        connectionsRef.current = {}; socketRef.current?.disconnect(); window.location.href = "/";
     };
     const addMessage = (data, sender, socketIdSender) => { setMessages(prev => [...prev, { sender, data }]); if (socketIdSender !== socketIdRef.current) setNewMessages(p => p + 1); };
     const sendMessage = () => { if (!message.trim()) return; socketRef.current.emit('chat-message', message, username); setMessage(""); };
@@ -667,18 +677,6 @@ export default function VideoMeetComponent() {
             )}
 
             {isHost && <div style={{ position: 'absolute', top: '16px', left: showAI ? '332px' : '16px', zIndex: 20, background: 'rgba(102,126,234,0.25)', border: '1px solid rgba(102,126,234,0.4)', borderRadius: '20px', padding: '5px 14px', color: '#a78bfa', fontSize: '12px', fontWeight: '700', transition: 'left 0.3s', pointerEvents: 'none' }}>👑 Host</div>}
-
-            {/* ── YOU DASHBOARD ── */}
-            <div style={{ position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)', zIndex: 20, background: 'rgba(10,10,20,0.85)', border: '1px solid rgba(102,126,234,0.3)', borderRadius: '40px', padding: '6px 14px', display: 'flex', alignItems: 'center', gap: '8px', backdropFilter: 'blur(16px)', boxShadow: '0 4px 20px rgba(0,0,0,0.5)', pointerEvents: 'none', maxWidth: 'calc(100vw - 120px)', overflow: 'hidden' }}>
-                <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: isHost ? 'linear-gradient(135deg,#f59e0b,#ef4444)' : 'linear-gradient(135deg,#667eea,#764ba2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '11px', color: 'white', flexShrink: 0 }}>{(username || 'Y')[0].toUpperCase()}</div>
-                <span style={{ color: 'white', fontWeight: '700', fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '90px' }}>{username || 'You'}</span>
-                {isHost && <span style={{ background: 'rgba(245,158,11,0.2)', border: '1px solid rgba(245,158,11,0.4)', color: '#fbbf24', fontSize: '10px', fontWeight: '700', padding: '1px 6px', borderRadius: '20px', flexShrink: 0 }}>👑 Host</span>}
-                <span style={{ color: 'rgba(255,255,255,0.12)', fontSize: '14px' }}>|</span>
-                <span style={{ fontSize: '11px', color: video ? '#4ade80' : '#f87171', fontWeight: '700', flexShrink: 0 }}>{video ? '📹 On' : '📷 Off'}</span>
-                <span style={{ fontSize: '11px', color: audio ? '#4ade80' : '#f87171', fontWeight: '700', flexShrink: 0 }}>{audio ? '🎤 On' : '🔇 Off'}</span>
-                <span style={{ color: 'rgba(255,255,255,0.12)', fontSize: '14px' }}>|</span>
-                <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', flexShrink: 0 }}>👥 {totalParticipants}</span>
-            </div>
 
             {/* ── YOU DASHBOARD ── */}
             <div style={{ position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)', zIndex: 20, background: 'rgba(10,10,20,0.85)', border: '1px solid rgba(102,126,234,0.3)', borderRadius: '40px', padding: '6px 16px', display: 'flex', alignItems: 'center', gap: '10px', backdropFilter: 'blur(16px)', boxShadow: '0 4px 20px rgba(0,0,0,0.5)', pointerEvents: 'none', maxWidth: 'calc(100vw - 120px)', overflow: 'hidden' }}>
