@@ -54,7 +54,9 @@ function AIAssistant({ isOpen, onClose, username, meetingCode, participants }) {
     const chatEndRef = useRef(null);
     useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
     const callAI = async (msgs, sysPrompt) => {
-        const res = await fetch(`${server_url}/api/v1/users/ai/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: msgs, systemPrompt: sysPrompt }) });
+        const token = localStorage.getItem('token');
+        const sessionId = localStorage.getItem('sessionId');
+        const res = await fetch(`${server_url}/api/v1/users/ai/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token && { 'Authorization': `Bearer ${token}` }), ...(sessionId && { 'x-session-id': sessionId }) }, body: JSON.stringify({ messages: msgs, systemPrompt: sysPrompt }) });
         if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || `HTTP ${res.status}`); }
         const data = await res.json(); return data.reply;
     };
@@ -426,7 +428,9 @@ export default function VideoMeetComponent() {
         const pollSummary = polls.map(p => `"${p.question}" — ${p.options.map((o, i) => `${o}: ${p.results[i]} votes`).join(', ')}`).join('\n') || 'No polls';
         const prompt = `You are an expert meeting analyst. Analyze this meeting and give a detailed score report.\n\nMeeting Details:\n- Duration: ${duration} minutes\n- Participants: ${participants.join(', ')}\n- Total messages: ${Object.values(messageCount.current).reduce((a, b) => a + b, 0)}\n- Message breakdown: ${msgData}\n- Polls: ${pollSummary}\n\nRespond ONLY with valid JSON (no markdown):\n{"overallScore":85,"grade":"B+","summary":"2-3 sentence summary","metrics":{"engagement":80,"participation":75,"productivity":90,"collaboration":85},"highlights":["point1","point2"],"improvements":["imp1","imp2"],"participantScores":[{"name":"Alice","score":90,"role":"Active Contributor"}]}`;
         try {
-            const res = await fetch(`${server_url}/api/v1/users/ai/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], systemPrompt: 'You are a meeting analytics AI. Always respond with valid JSON only.' }) });
+            const token = localStorage.getItem('token');
+            const sessionId = localStorage.getItem('sessionId');
+            const res = await fetch(`${server_url}/api/v1/users/ai/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token && { 'Authorization': `Bearer ${token}` }), ...(sessionId && { 'x-session-id': sessionId }) }, body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], systemPrompt: 'You are a meeting analytics AI. Always respond with valid JSON only.' }) });
             const data = await res.json(); const clean = data.reply.replace(/```json|```/g, '').trim(); setScoreData(JSON.parse(clean));
         } catch (e) { setScoreData({ error: 'Could not generate score.' }); }
         setScoreLoading(false);
