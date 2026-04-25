@@ -157,7 +157,7 @@ export const connectToSocket = (server) => {
                     io.to(hosts[room]).emit("you-are-host");
                 }
                 if (connections[room].length === 0) {
-                    delete connections[room]; delete messages[room]; delete hosts[room]; delete waitingRoom[room];
+                    delete connections[room]; delete messages[room]; delete hosts[room]; delete waitingRoom[room]; delete roomPolls[room];
                 }
             }
             for (const room in waitingRoom) {
