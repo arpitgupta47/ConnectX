@@ -192,24 +192,19 @@ export default function Authentication() {
     const [fpNewPass, setFpNewPass] = useState('');
     const [fpShowPass, setFpShowPass] = useState(false);
 
-    useEffect(() => {
-        const saved = localStorage.getItem('cx_remember');
-        if (saved) { setSiUsername(saved); setRememberMe(true); }
-    }, []);
-
     const navigate = useNavigate();
     const location = useLocation();
     const { handleRegister, handleLogin, handleGoogleLogin } = useContext(AuthContext);
 
-useEffect(() => {
-    const saved = localStorage.getItem('cx_remember');
-    if (saved) { setSiUsername(saved); setRememberMe(true); }
+    useEffect(() => {
+        const saved = localStorage.getItem('cx_remember');
+        if (saved) { setSiUsername(saved); setRememberMe(true); }
 
-    const params = new URLSearchParams(location.search);
-    if (params.get("reason") === "session_conflict") {
-        setError("Aapka account kisi aur device par login ho gaya hai. Dobara login karein.");
-    }
-}, []);
+        const params = new URLSearchParams(location.search);
+        if (params.get("reason") === "session_conflict") {
+            setError("Aapka account kisi aur device par login ho gaya hai. Dobara login karein.");
+        }
+    }, []);
 
     const reset = () => { setError(''); setSuccess(''); };
     const goTo = (s) => { reset(); setScreen(s); };
