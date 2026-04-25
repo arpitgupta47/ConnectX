@@ -477,14 +477,14 @@ export default function Authentication() {
                                         <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px', pointerEvents: 'none', opacity: 0.5 }}>🔑</span>
                                         <input type={fpShowPass ? 'text' : 'password'} placeholder="New password" value={fpNewPass} onChange={e => setFpNewPass(e.target.value)} required
                                             style={{ width: '100%', padding: '13px 48px 13px 42px', background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.09)', borderRadius: '12px', color: 'white', fontSize: '14px', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
-                                        <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }}>{showPassBtn(fpShowPass, setSuShowPass)}</div>
+                                        <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }}>{showPassBtn(fpShowPass, setFpShowPass)}</div>
                                     </div>
                                     <PasswordStrength password={fpNewPass} />
                                 </div>
                                 <PrimaryBtn type="submit" loading={loading}>🔓 Reset Password</PrimaryBtn>
                             </form>
                             <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                                <button onClick={handleSendOtp} style={{ background: 'none', border: 'none', color: '#475569', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                <button onClick={(e) => { e.preventDefault(); handleSendOtp(e); }} style={{ background: 'none', border: 'none', color: '#475569', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>
                                     Didn't receive? <span style={{ color: '#818cf8', fontWeight: '600' }}>Resend OTP</span>
                                 </button>
                             </div>
