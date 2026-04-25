@@ -284,7 +284,8 @@ export default function VideoMeetComponent() {
     const localVideoref = useRef();
     const connectionsRef = useRef({});
 
-    const { hasFeature, userPlan, isFounder } = useContext(AuthContext);
+    const { hasFeature, userPlan, isFounder, userData: authUserData } = useContext(AuthContext);
+    const isActualFounder = isFounder || (authUserData?.email && ['guptaarpit.tech@gmail.com','founder2@gmail.com','founder3@gmail.com'].includes(authUserData.email));
     const [upgradePromptFeature, setUpgradePromptFeature] = useState(null); // which feature was blocked
 
     const [videoAvailable, setVideoAvailable] = useState(true);
@@ -730,7 +731,7 @@ export default function VideoMeetComponent() {
                 <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: isHost ? 'linear-gradient(135deg,#f59e0b,#ef4444)' : 'linear-gradient(135deg,#667eea,#764ba2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '11px', color: 'white', flexShrink: 0 }}>{(username || 'Y')[0].toUpperCase()}</div>
                 <span style={{ color: 'white', fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>{username || 'You'}</span>
                 {isHost && <span style={{ background: 'rgba(245,158,11,0.2)', border: '1px solid rgba(245,158,11,0.4)', color: '#fbbf24', fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '20px', flexShrink: 0 }}>👑 Host</span>}
-                {isFounder && <span style={{ background: 'linear-gradient(135deg,rgba(129,140,248,0.3),rgba(56,189,248,0.3))', border: '1px solid rgba(129,140,248,0.6)', color: '#a5b4fc', fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '20px', flexShrink: 0 }}>⚡ Founder</span>}
+                {isActualFounder && <span style={{ background: 'linear-gradient(135deg,rgba(129,140,248,0.3),rgba(56,189,248,0.3))', border: '1px solid rgba(129,140,248,0.6)', color: '#a5b4fc', fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '20px', flexShrink: 0 }}>⚡ Founder</span>}
                 <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '16px' }}>|</span>
                 <span style={{ fontSize: '11px', color: video ? '#4ade80' : '#f87171', fontWeight: '700', flexShrink: 0 }}>{video ? '📹 On' : '📷 Off'}</span>
                 <span style={{ fontSize: '11px', color: audio ? '#4ade80' : '#f87171', fontWeight: '700', flexShrink: 0 }}>{audio ? '🎤 On' : '🔇 Off'}</span>
