@@ -86,6 +86,15 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Re-check founder whenever userData updates
+  useEffect(() => {
+    if (userData?.email) {
+      const founder = FOUNDER_EMAILS.includes(userData.email);
+      setIsFounder(founder);
+      if (founder) setUserPlan('enterprise');
+    }
+  }, [userData]);
+
   const fetchProfile = async () => {
     try {
       const res = await client.get("/get_profile");
@@ -104,7 +113,9 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user has access to a feature
   const hasFeature = (feature) => {
-    if (isFounder) return true; // founder gets everything
+    // Direct email check — no async state dependency
+    if (userData?.email && FOUNDER_EMAILS.includes(userData.email)) return true;
+    if (isFounder) return true;
     const plan = userPlan || 'free';
     return PLAN_FEATURES[plan]?.[feature] ?? false;
   };
