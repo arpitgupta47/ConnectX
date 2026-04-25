@@ -1,8 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { AuthContext } from '../contexts/AuthContext'
 
 export default function LandingPage() {
     const navigate = useNavigate();
+    const { upgradePlan } = useContext(AuthContext);
     const canvasRef = useRef(null);
     const [scrollY, setScrollY] = useState(0);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -484,7 +486,17 @@ export default function LandingPage() {
                                                 name: 'ConnectX',
                                                 description: 'ConnectX Pro — Monthly Subscription',
                                                 image: 'https://connectx-5jkx.onrender.com/logo3.png',
-                                                handler: function (response) {
+                                                handler: async function (response) {
+                                                    try {
+                                                        await upgradePlan(
+                                                            response.razorpay_payment_id,
+                                                            response.razorpay_order_id,
+                                                            response.razorpay_signature,
+                                                            'pro'
+                                                        );
+                                                    } catch (e) {
+                                                        console.error("Plan upgrade API error:", e);
+                                                    }
                                                     setActiveModal('modal-payment-success');
                                                 },
                                                 prefill: {
