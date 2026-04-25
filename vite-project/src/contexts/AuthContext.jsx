@@ -66,9 +66,17 @@ export const PLAN_FEATURES = {
   },
 };
 
+// ── Founder emails — always get enterprise features free ─────────
+const FOUNDER_EMAILS = [
+  'guptaarpit.tech@gmail.com',   // Arpit — Main Founder
+  'founder2@gmail.com',          // 👈 2nd Gmail yahan daalo
+  'founder3@gmail.com',          // 👈 3rd Gmail yahan daalo
+];
+
 export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const [userPlan, setUserPlan] = useState('free');
+  const [isFounder, setIsFounder] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -83,7 +91,9 @@ export const AuthProvider = ({ children }) => {
       const res = await client.get("/get_profile");
       if (res.status === 200) {
         setUserData(res.data);
-        setUserPlan(res.data.plan || 'free');
+        const founder = FOUNDER_EMAILS.includes(res.data.email);
+        setIsFounder(founder);
+        setUserPlan(founder ? 'enterprise' : (res.data.plan || 'free'));
         return res.data;
       }
     } catch (err) {
@@ -94,6 +104,7 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user has access to a feature
   const hasFeature = (feature) => {
+    if (isFounder) return true; // founder gets everything
     const plan = userPlan || 'free';
     return PLAN_FEATURES[plan]?.[feature] ?? false;
   };
@@ -141,6 +152,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("sessionId");
     setUserData(null);
     setUserPlan('free');
+    setIsFounder(false);
     navigate("/auth");
   };
 
@@ -178,6 +190,7 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider value={{
       userData, setUserData,
       userPlan,
+      isFounder,
       hasFeature,
       fetchProfile,
       handleRegister, handleLogin, handleGoogleLogin, handleLogout,
