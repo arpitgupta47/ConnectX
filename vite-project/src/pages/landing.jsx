@@ -411,12 +411,12 @@ export default function LandingPage() {
                             amount: 0,
                         },
                         {
-                            plan: 'Pro', price: '₹499', period: '/mo', badge: '⭐ Most Popular',
+                            plan: 'Pro', price: '₹49', period: '/mo', badge: '⭐ Most Popular',
                             desc: 'For growing teams that need more power.',
                             features: ['Everything in Free', 'Up to 100 participants', 'AI Meeting Score', 'Live Polling', 'Meeting recordings', 'Priority support'],
                             color: '#818cf8', highlight: true,
                             btnLabel: 'Subscribe with Razorpay', btnAction: 'razorpay',
-                            amount: 49900,
+                            amount: 4900,
                         },
                         {
                             plan: 'Enterprise', price: 'Custom', period: '', badge: null,
