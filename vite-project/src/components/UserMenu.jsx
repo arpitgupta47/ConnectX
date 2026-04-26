@@ -72,7 +72,7 @@ export default function UserMenu() {
                     {/* Menu */}
                     <div style={{ padding: '6px' }}>
                         <DropItem icon="🏠" label="Home" onClick={() => { navigate('/home'); setOpen(false); }} />
-                        <DropItem icon="📋" label="Meeting History" onClick={() => { navigate('/history'); setOpen(false); }} />
+                        <DropItem icon="📋" label="Meeting History" onClick={() => { window.open('/history', '_blank'); setOpen(false); }} />
                         <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '4px 6px' }} />
                         <DropItem icon="🚪" label="Logout" onClick={() => { handleLogout(); setOpen(false); }} danger />
                     </div>
