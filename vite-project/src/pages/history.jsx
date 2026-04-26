@@ -73,34 +73,37 @@ export default function History() {
             {/* NAV */}
             <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid rgba(102,126,234,0.15)', backdropFilter: 'blur(10px)', position: 'sticky', top: 0, zIndex: 10, background: 'rgba(15,15,26,0.85)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg,#667eea,#764ba2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📡</div>
+                    <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg,#667eea,#764ba2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                    </div>
                     <h2 style={{ margin: 0, fontWeight: '700', background: 'linear-gradient(90deg,#667eea,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>ConnectX</h2>
                 </div>
-                <button onClick={() => routeTo('/home')} style={{ background: 'rgba(102,126,234,0.15)', border: '1px solid rgba(102,126,234,0.3)', color: '#a78bfa', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '600' }}>
+                <button onClick={() => routeTo('/home')} style={{ background: 'rgba(102,126,234,0.15)', border: '1px solid rgba(102,126,234,0.3)', color: '#a78bfa', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     ← Back
                 </button>
             </nav>
 
             {/* HEADER */}
             <div style={{ padding: '36px 24px 20px', maxWidth: '760px', margin: '0 auto' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
-                    <div style={{ width: '48px', height: '48px', background: 'linear-gradient(135deg,#667eea,#764ba2)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>📋</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+                    <div style={{ width: '52px', height: '52px', background: 'linear-gradient(135deg,#667eea,#764ba2)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>📋</div>
                     <div>
-                        <h1 style={{ margin: 0, fontSize: '1.7rem', fontWeight: '800' }}>Meeting History</h1>
-                        <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>
+                        <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: '800' }}>Meeting History</h1>
+                        <p style={{ margin: 0, color: '#64748b', fontSize: '13px', marginTop: '2px' }}>
                             {loading ? 'Loading...' : `${meetings.length} meeting${meetings.length !== 1 ? 's' : ''} attended`}
                         </p>
                     </div>
                 </div>
+
                 {/* SEARCH BAR */}
                 {!loading && meetings.length > 0 && (
-                    <div style={{ position: 'relative' }}>
-                        <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px', color: '#475569' }}>🔍</span>
+                    <div style={{ position: 'relative', marginBottom: '8px' }}>
+                        <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', color: '#475569' }}>🔍</span>
                         <input
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             placeholder="Search by meeting code..."
-                            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(102,126,234,0.25)', borderRadius: '12px', color: 'white', padding: '11px 14px 11px 40px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(102,126,234,0.25)', borderRadius: '12px', color: 'white', padding: '13px 16px 13px 44px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
                         />
                     </div>
                 )}
@@ -131,26 +134,32 @@ export default function History() {
                         {filtered.map((e, i) => {
                             const { date, time } = formatDate(e.date);
                             return (
-                                <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(102,126,234,0.18)', borderRadius: '16px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '14px', transition: 'all 0.2s' }}
+                                <div key={i}
+                                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(102,126,234,0.18)', borderRadius: '16px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '14px', transition: 'all 0.2s' }}
                                     onMouseEnter={ev => { ev.currentTarget.style.background = 'rgba(102,126,234,0.08)'; ev.currentTarget.style.borderColor = 'rgba(102,126,234,0.35)'; ev.currentTarget.style.transform = 'translateY(-1px)'; }}
                                     onMouseLeave={ev => { ev.currentTarget.style.background = 'rgba(255,255,255,0.03)'; ev.currentTarget.style.borderColor = 'rgba(102,126,234,0.18)'; ev.currentTarget.style.transform = 'translateY(0)'; }}
                                 >
-                                    <div style={{ width: '44px', height: '44px', flexShrink: 0, background: gradients[i % gradients.length], borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🎬</div>
+                                    {/* ICON */}
+                                    <div style={{ width: '46px', height: '46px', flexShrink: 0, background: gradients[i % gradients.length], borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🎬</div>
+
+                                    {/* INFO */}
                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '5px' }}>
                                             <span style={{ fontFamily: 'monospace', fontSize: '1rem', fontWeight: '800', letterSpacing: '2px', color: '#a78bfa' }}>{e.meetingCode}</span>
-                                            <span style={{ background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.25)', color: '#4ade80', fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '20px' }}>Attended</span>
+                                            <span style={{ background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', color: '#4ade80', fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '20px', letterSpacing: '0.5px' }}>Attended</span>
                                         </div>
-                                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                                            <span style={{ color: '#64748b', fontSize: '12px' }}>📅 {date}</span>
-                                            <span style={{ color: '#64748b', fontSize: '12px' }}>🕐 {time}</span>
+                                        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+                                            <span style={{ color: '#64748b', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>📅 {date}</span>
+                                            <span style={{ color: '#64748b', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>🕐 {time}</span>
                                         </div>
                                     </div>
+
+                                    {/* REJOIN BUTTON */}
                                     <button
                                         onClick={() => handleRejoin(e.meetingCode)}
-                                        style={{ flexShrink: 0, background: 'linear-gradient(135deg,#667eea,#764ba2)', border: 'none', color: 'white', borderRadius: '10px', padding: '8px 16px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                        onMouseEnter={ev => ev.currentTarget.style.opacity = '0.85'}
-                                        onMouseLeave={ev => ev.currentTarget.style.opacity = '1'}
+                                        style={{ flexShrink: 0, background: 'linear-gradient(135deg,#667eea,#764ba2)', border: 'none', color: 'white', borderRadius: '10px', padding: '9px 18px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 14px rgba(102,126,234,0.35)' }}
+                                        onMouseEnter={ev => { ev.currentTarget.style.opacity = '0.85'; ev.currentTarget.style.transform = 'scale(1.03)'; }}
+                                        onMouseLeave={ev => { ev.currentTarget.style.opacity = '1'; ev.currentTarget.style.transform = 'scale(1)'; }}
                                     >
                                         🔁 Rejoin
                                     </button>
