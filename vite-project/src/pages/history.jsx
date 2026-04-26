@@ -3,22 +3,29 @@ import { AuthContext } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom';
 
 export default function History() {
-    const { getHistoryOfUser } = useContext(AuthContext);
+    const { getHistoryOfUser, addToUserHistory } = useContext(AuthContext);
     const [meetings, setMeetings] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [toast, setToast] = useState(null);
     const routeTo = useNavigate();
+
+    const showToast = (msg, type = 'error') => {
+        setToast({ msg, type });
+        setTimeout(() => setToast(null), 3500);
+    };
 
     useEffect(() => {
         const fetchHistory = async () => {
             try {
                 const history = await getHistoryOfUser();
                 setMeetings(history);
-            } catch {
-                // IMPLEMENT SNACKBAR
+            } catch (e) {
+                showToast('Failed to load meeting history. Please try again.', 'error');
             } finally {
                 setLoading(false);
             }
-        }
+        };
         fetchHistory();
     }, []);
 
@@ -32,6 +39,15 @@ export default function History() {
         return { date: `${day}/${month}/${year}`, time: `${hours}:${mins}` };
     };
 
+    const handleRejoin = async (code) => {
+        try {
+            await addToUserHistory(code);
+            routeTo(`/${code}`);
+        } catch {
+            showToast('Failed to rejoin meeting.', 'error');
+        }
+    };
+
     const gradients = [
         'linear-gradient(135deg,#667eea,#764ba2)',
         'linear-gradient(135deg,#06b6d4,#667eea)',
@@ -40,8 +56,20 @@ export default function History() {
         'linear-gradient(135deg,#667eea,#06b6d4)',
     ];
 
+    const filtered = meetings.filter(m =>
+        m.meetingCode?.toLowerCase().includes(search.toLowerCase())
+    );
+
     return (
         <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%)', color: 'white', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+
+            {/* TOAST */}
+            {toast && (
+                <div style={{ position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, background: toast.type === 'error' ? 'rgba(239,68,68,0.95)' : 'rgba(74,222,128,0.95)', color: 'white', padding: '12px 24px', borderRadius: '12px', fontSize: '14px', fontWeight: '600', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {toast.type === 'error' ? '⚠️' : '✅'} {toast.msg}
+                </div>
+            )}
+
             {/* NAV */}
             <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid rgba(102,126,234,0.15)', backdropFilter: 'blur(10px)', position: 'sticky', top: 0, zIndex: 10, background: 'rgba(15,15,26,0.85)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -55,7 +83,7 @@ export default function History() {
 
             {/* HEADER */}
             <div style={{ padding: '36px 24px 20px', maxWidth: '760px', margin: '0 auto' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
                     <div style={{ width: '48px', height: '48px', background: 'linear-gradient(135deg,#667eea,#764ba2)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>📋</div>
                     <div>
                         <h1 style={{ margin: 0, fontSize: '1.7rem', fontWeight: '800' }}>Meeting History</h1>
@@ -64,6 +92,18 @@ export default function History() {
                         </p>
                     </div>
                 </div>
+                {/* SEARCH BAR */}
+                {!loading && meetings.length > 0 && (
+                    <div style={{ position: 'relative' }}>
+                        <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px', color: '#475569' }}>🔍</span>
+                        <input
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Search by meeting code..."
+                            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(102,126,234,0.25)', borderRadius: '12px', color: 'white', padding: '11px 14px 11px 40px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* CONTENT */}
@@ -82,9 +122,13 @@ export default function History() {
                             🚀 Start a Meeting
                         </button>
                     </div>
+                ) : filtered.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px', color: '#475569', fontSize: '14px' }}>
+                        No meetings found for "<strong style={{ color: '#a78bfa' }}>{search}</strong>"
+                    </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {meetings.map((e, i) => {
+                        {filtered.map((e, i) => {
                             const { date, time } = formatDate(e.date);
                             return (
                                 <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(102,126,234,0.18)', borderRadius: '16px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '14px', transition: 'all 0.2s' }}
@@ -102,7 +146,14 @@ export default function History() {
                                             <span style={{ color: '#64748b', fontSize: '12px' }}>🕐 {time}</span>
                                         </div>
                                     </div>
-                                    <div style={{ flexShrink: 0, width: '30px', height: '30px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', fontSize: '11px', fontWeight: '700' }}>#{i + 1}</div>
+                                    <button
+                                        onClick={() => handleRejoin(e.meetingCode)}
+                                        style={{ flexShrink: 0, background: 'linear-gradient(135deg,#667eea,#764ba2)', border: 'none', color: 'white', borderRadius: '10px', padding: '8px 16px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                        onMouseEnter={ev => ev.currentTarget.style.opacity = '0.85'}
+                                        onMouseLeave={ev => ev.currentTarget.style.opacity = '1'}
+                                    >
+                                        🔁 Rejoin
+                                    </button>
                                 </div>
                             );
                         })}
