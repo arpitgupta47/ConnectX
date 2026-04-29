@@ -757,7 +757,11 @@ export default function LandingPage() {
                                 </button>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
 
+            <style>{`
                 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.2)} }
                 * { margin: 0; padding: 0; box-sizing: border-box; }
                 ::-webkit-scrollbar { width: 6px; }
