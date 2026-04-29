@@ -374,16 +374,25 @@ export default function VideoMeetComponent() {
     // ── PERMANENT FIX: ref callback ────────────────────────────────
     const localVideoCallback = useCallback((node) => {
         localVideoref.current = node;
-        if (node && window.localStream) {
-            node.srcObject = window.localStream;
-            node.play().catch(() => { });
+        if (node) {
+            const stream = window.localStream;
+            if (stream) {
+                node.srcObject = stream;
+                node.play().catch(() => { });
+            }
         }
     }, []);
 
     useEffect(() => {
-        if (!askForUsername && localVideoref.current && window.localStream) {
-            localVideoref.current.srcObject = window.localStream;
-            localVideoref.current.play().catch(() => { });
+        if (!askForUsername) {
+            // Small delay to ensure DOM has mounted the new video element
+            const timer = setTimeout(() => {
+                if (localVideoref.current && window.localStream) {
+                    localVideoref.current.srcObject = window.localStream;
+                    localVideoref.current.play().catch(() => { });
+                }
+            }, 100);
+            return () => clearTimeout(timer);
         }
     }, [askForUsername]);
 
@@ -810,6 +819,7 @@ export default function VideoMeetComponent() {
             <div className={`${styles.conferenceView} ${getGridClass(totalParticipants)}`}>
                 {/* Self tile */}
                 <div className={`${styles.videoTile} ${styles.selfTile}`} style={{ position: 'relative' }}>
+                    <video ref={localVideoCallback} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     <span className={styles.nameTag}>{username || "You"}</span>
                     <span className={styles.selfBadge}>{isHost ? '👑 Host' : 'You'}</span>
                     {/* Self cam+mic indicators */}
