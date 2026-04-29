@@ -113,6 +113,17 @@ export const connectToSocket = (server) => {
             io.to(socketId).emit("force-remove");
         });
 
+        // ── INTERVIEW MODE (HOST ONLY) ─────────────────────────────
+        socket.on("interview-mode-toggle", ({ enabled }) => {
+            const user = users[socket.id];
+            if (!user) return;
+            const room = user.room;
+            if (hosts[room] !== socket.id) return; // only host can toggle
+            connections[room]?.forEach(id => {
+                io.to(id).emit("interview-mode-update", { enabled });
+            });
+        });
+
         // ── POLL EVENTS ────────────────────────────────────────────
         socket.on("poll-create", (poll) => {
             const user = users[socket.id];
