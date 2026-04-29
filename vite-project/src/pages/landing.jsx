@@ -116,9 +116,9 @@ export default function LandingPage() {
     ];
 
     const testimonials = [
-        { name: 'Rohan Verma', role: 'Engineering Manager, Flipkart', text: 'ConnectX replaced our Zoom subscription. The AI Meeting Score alone saves us hours every week.', avatar: 'RV' },
-        { name: 'Kavya Nair', role: 'Senior Designer, Swiggy', text: 'The live polling feature is game-changing for standups. Our team engagement went up 3x.', avatar: 'KN' },
-        { name: 'Nikhil Bansal', role: 'Dev Advocate, Zepto', text: 'Finally a video app built for real collaboration. The AI assistant during client calls is 🔥', avatar: 'NB' },
+        { name: 'Rohan Verma',  text: 'ConnectX replaced our Zoom subscription. The AI Meeting Score alone saves us hours every week.', avatar: 'RV' },
+        { name: 'Kavya Nair',  text: 'The live polling feature is game-changing for standups. Our team engagement went up 3x.', avatar: 'KN' },
+        { name: 'Nikhil Bansal',  text: 'Finally a video app built for real collaboration. The AI assistant during client calls is 🔥', avatar: 'NB' },
     ];
 
     const parallaxX = (mousePos.x - 0.5) * 20;
