@@ -348,6 +348,8 @@ export default function VideoMeetComponent() {
     // ── participant media states: socketId -> { camOn, micOn, name } ──
     const [participantMediaState, setParticipantMediaState] = useState({});
 
+    const [interviewMode, setInterviewMode] = useState(false);
+
     const [showPollPanel, setShowPollPanel] = useState(false);
     const [polls, setPolls] = useState([]);
     const [activePoll, setActivePoll] = useState(null);
@@ -508,6 +510,14 @@ export default function VideoMeetComponent() {
         socketRef.current.emit('host-remove-user', { socketId });
     };
 
+    const toggleInterviewMode = () => {
+        if (!isHost) return;
+        const newVal = !interviewMode;
+        setInterviewMode(newVal);
+        if (newVal) setShowAI(false); // force-close AI panel for host too
+        socketRef.current.emit('interview-mode-toggle', { enabled: newVal });
+    };
+
     const createPoll = () => {
         const opts = pollOptions.filter(o => o.trim());
         if (!pollQuestion.trim() || opts.length < 2) return;
@@ -558,6 +568,10 @@ export default function VideoMeetComponent() {
         // ── MEDIA STATE SYNC ───────────────────────────────────────
         socketRef.current.on('participant-media-state', ({ socketId, camOn, micOn }) => {
             setParticipantMediaState(prev => ({ ...prev, [socketId]: { camOn, micOn } }));
+        });
+
+        socketRef.current.on('interview-mode-update', ({ enabled }) => {
+            setInterviewMode(enabled);
         });
 
         socketRef.current.on('poll-created', (poll) => { setPolls(prev => [...prev, poll]); setActivePoll(poll); setShowPollPanel(true); });
@@ -789,6 +803,26 @@ export default function VideoMeetComponent() {
                 <span style={{ fontSize: '11px', color: '#fbbf24', fontWeight: '700', flexShrink: 0, fontFamily: 'monospace' }}>⏱ {meetingDuration}</span>
             </div>
 
+            {/* ── INTERVIEW MODE BANNER ── */}
+            {interviewMode && (
+                <div style={{ position: 'absolute', top: '60px', left: '50%', transform: 'translateX(-50%)', zIndex: 25, background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.5)', borderRadius: '30px', padding: '7px 20px', display: 'flex', alignItems: 'center', gap: '8px', backdropFilter: 'blur(12px)', boxShadow: '0 4px 20px rgba(239,68,68,0.25)', pointerEvents: 'none' }}>
+                    <span style={{ fontSize: '14px' }}>🔒</span>
+                    <span style={{ color: '#fca5a5', fontWeight: '700', fontSize: '13px', letterSpacing: '0.5px' }}>INTERVIEW MODE — AI Disabled for All Participants</span>
+                </div>
+            )}
+
+            {/* ── INTERVIEW MODE TOGGLE (HOST ONLY) ── */}
+            {isHost && (
+                <div style={{ position: 'absolute', bottom: '90px', left: '50%', transform: 'translateX(-50%)', zIndex: 25 }}>
+                    <button
+                        onClick={toggleInterviewMode}
+                        title={interviewMode ? 'Disable Interview Mode' : 'Enable Interview Mode (disables AI for everyone)'}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 18px', borderRadius: '20px', background: interviewMode ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.07)', border: `1px solid ${interviewMode ? 'rgba(239,68,68,0.6)' : 'rgba(255,255,255,0.2)'}`, color: interviewMode ? '#fca5a5' : '#94a3b8', cursor: 'pointer', fontSize: '12px', fontWeight: '700', backdropFilter: 'blur(10px)', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
+                        {interviewMode ? '🔓 Exit Interview Mode' : '🔒 Interview Mode'}
+                    </button>
+                </div>
+            )}
+
             {/* VIDEO GRID */}
             <div className={`${styles.conferenceView} ${getGridClass(totalParticipants)}`}>
                 {/* Self tile */}
@@ -904,7 +938,7 @@ export default function VideoMeetComponent() {
 
             {/* CONTROL BAR */}
             <div className={styles.buttonContainers}>
-                <button onClick={() => setShowAI(p => !p)} title="AI Meeting Assistant" style={{ background: showAI ? 'linear-gradient(135deg,#667eea,#764ba2)' : 'rgba(102,126,234,0.15)', border: `1px solid ${showAI ? '#667eea' : 'rgba(102,126,234,0.4)'}`, color: 'white', borderRadius: '12px', padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>🤖 <span className={styles.btnLabel}>AI</span></button>
+                <button onClick={() => { if (interviewMode) return; setShowAI(p => !p); }} title={interviewMode ? '🔒 AI disabled in Interview Mode' : 'AI Meeting Assistant'} style={{ background: interviewMode ? 'rgba(100,100,100,0.15)' : showAI ? 'linear-gradient(135deg,#667eea,#764ba2)' : 'rgba(102,126,234,0.15)', border: `1px solid ${interviewMode ? 'rgba(100,100,100,0.3)' : showAI ? '#667eea' : 'rgba(102,126,234,0.4)'}`, color: interviewMode ? '#475569' : 'white', borderRadius: '12px', padding: '8px 12px', cursor: interviewMode ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '700', transition: 'all 0.2s', whiteSpace: 'nowrap', opacity: interviewMode ? 0.5 : 1 }}>🤖 <span className={styles.btnLabel}>AI</span>{interviewMode && <span style={{ fontSize: '10px' }}>🔒</span>}</button>
 
                 {/* POLL BUTTON — Pro only */}
                 <button
