@@ -476,47 +476,8 @@ export default function LandingPage() {
                                     if (p.btnAction === 'free') { navigate('/auth'); return; }
                                     if (p.btnAction === 'contact') { setActiveModal('modal-contact'); return; }
                                     if (p.btnAction === 'razorpay') {
-                                        const script = document.createElement('script');
-                                        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-                                        script.onload = () => {
-                                            const options = {
-                                                key: 'rzp_live_YourKeyHere',
-                                                amount: p.amount,
-                                                currency: 'INR',
-                                                name: 'ConnectX',
-                                                description: 'ConnectX Pro — Monthly Subscription',
-                                                image: 'https://connectx-5jkx.onrender.com/logo3.png',
-                                                handler: async function (response) {
-                                                    try {
-                                                        await upgradePlan(
-                                                            response.razorpay_payment_id,
-                                                            response.razorpay_order_id,
-                                                            response.razorpay_signature,
-                                                            'pro'
-                                                        );
-                                                    } catch (e) {
-                                                        console.error("Plan upgrade API error:", e);
-                                                    }
-                                                    setActiveModal('modal-payment-success');
-                                                },
-                                                prefill: {
-                                                    name: '',
-                                                    email: '',
-                                                    contact: '',
-                                                },
-                                                notes: { plan: 'Pro', source: 'ConnectX Landing Page' },
-                                                theme: { color: '#818cf8' },
-                                                modal: {
-                                                    ondismiss: function () { console.log('Payment dismissed'); }
-                                                }
-                                            };
-                                            const rzp = new window.Razorpay(options);
-                                            rzp.on('payment.failed', function (response) {
-                                                alert('Payment failed. Please try again.');
-                                            });
-                                            rzp.open();
-                                        };
-                                        document.body.appendChild(script);
+                                        setActiveModal('modal-coming-soon');
+                                        return;
                                     }
                                 }}
                             >
@@ -781,11 +742,22 @@ export default function LandingPage() {
                                 </button>
                             </div>
                         )}
-                    </div>
-                </div>
-            )}
+                        {activeModal === 'modal-coming-soon' && (
+                            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                                <div style={{ fontSize: '3.5rem', marginBottom: '16px' }}>🚀</div>
+                                <div style={{ display: 'inline-block', background: 'rgba(129,140,248,0.15)', border: '1px solid rgba(129,140,248,0.3)', borderRadius: '100px', padding: '4px 16px', fontSize: '11px', color: '#818cf8', fontWeight: '700', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '1.5px' }}>Coming Soon</div>
+                                <h2 style={{ fontSize: '1.6rem', fontWeight: '800', marginBottom: '10px', background: 'linear-gradient(90deg,#818cf8,#38bdf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Subscriptions</h2>
+                                <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: 1.8, marginBottom: '28px' }}>
+                                    Paid plans are not active yet.<br />
+                                    All features are <span style={{ color: '#34d399', fontWeight: '700' }}>free for everyone</span> right now — enjoy! 🎉
+                                </p>
+                                <button onClick={() => setActiveModal(null)}
+                                    style={{ width: '100%', padding: '14px', borderRadius: '12px', background: 'linear-gradient(135deg,#818cf8,#38bdf8)', border: 'none', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 24px rgba(129,140,248,0.35)' }}>
+                                    Got it 👍
+                                </button>
+                            </div>
+                        )}
 
-            <style>{`
                 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.2)} }
                 * { margin: 0; padding: 0; box-sizing: border-box; }
                 ::-webkit-scrollbar { width: 6px; }
